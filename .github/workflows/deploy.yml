@@ -85,6 +85,6 @@ jobs:
             echo "=== Containers ==="
             docker-compose ps
             echo "=== Backend logs ==="
-            docker-compose logs backend --tail=20
+            docker-compose logs --tail=20 backend
             echo "=== Frontend logs ==="
-            docker-compose logs frontend --tail=20
+            docker-compose logs --tail=20 frontend
