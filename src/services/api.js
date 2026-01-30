@@ -1,4 +1,15 @@
 const BACKEND_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+const API_SECRET = import.meta.env.VITE_API_SECRET || '';
+
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (API_SECRET) {
+    headers['X-API-Key'] = API_SECRET;
+  }
+  return headers;
+};
 
 async function callLiteLLM(messages) {
   console.log('=== SENDING TO AI ===');
@@ -7,9 +18,7 @@ async function callLiteLLM(messages) {
   
   const response = await fetch(`${BACKEND_API_URL}/generate-workout`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: getHeaders(),
     body: JSON.stringify({ messages })
   });
 

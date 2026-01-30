@@ -20,6 +20,31 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 
+// API Key validation middleware
+const validateApiKey = (req, res, next) => {
+  // Skip validation for health check
+  if (req.path === '/api/health') {
+    return next();
+  }
+
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.API_SECRET;
+
+  if (!expectedKey) {
+    console.warn('WARNING: API_SECRET not configured!');
+    return next(); // Allow in dev if not configured
+  }
+
+  if (!apiKey || apiKey !== expectedKey) {
+    console.warn('Invalid API key attempt from:', req.ip);
+    return res.status(401).json({ error: 'Unauthorized: Invalid API key' });
+  }
+
+  next();
+};
+
+app.use(validateApiKey);
+
 // Ensure data directory exists
 async function ensureDataDir() {
   const dataDir = path.join(__dirname, 'data');

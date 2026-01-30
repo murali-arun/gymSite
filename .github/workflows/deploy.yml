@@ -26,6 +26,7 @@ jobs:
       - name: Build frontend
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_API_SECRET: ${{ secrets.API_SECRET }}
         run: npm run build
 
       - name: Verify build
@@ -72,6 +73,7 @@ jobs:
             cat > backend/.env << EOF
             PORT=3002
             NODE_ENV=production
+            API_SECRET=${{ secrets.API_SECRET }}
             LITELLM_API_URL=${{ secrets.LITELLM_API_URL }}
             LITELLM_API_KEY=${{ secrets.LITELLM_API_KEY }}
             LITELLM_MODEL=${{ secrets.LITELLM_MODEL }}

@@ -1,4 +1,15 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+const API_SECRET = import.meta.env.VITE_API_SECRET || '';
+
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (API_SECRET) {
+    headers['X-API-Key'] = API_SECRET;
+  }
+  return headers;
+};
 
 // User Profile Structure:
 // {
@@ -15,7 +26,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 export async function getAllUsers() {
   try {
-    const response = await fetch(`${API_URL}/users`);
+    const response = await fetch(`${API_URL}/users`, {
+      headers: getHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch users');
     return await response.json();
   } catch (error) {
@@ -26,7 +39,9 @@ export async function getAllUsers() {
 
 export async function getUser(userId) {
   try {
-    const response = await fetch(`${API_URL}/users/${userId}`);
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+      headers: getHeaders()
+    });
     if (!response.ok) {
       if (response.status === 404) return null;
       throw new Error('Failed to fetch user');
@@ -54,7 +69,7 @@ export async function createUser(name, initialPrompt) {
     
     const response = await fetch(`${API_URL}/users`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(newUser)
     });
     
@@ -70,7 +85,7 @@ export async function updateUser(userId, updates) {
   try {
     const response = await fetch(`${API_URL}/users/${userId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(updates)
     });
     
@@ -137,7 +152,9 @@ export async function clearCurrentWorkout(userId) {
 
 export async function getActiveUserId() {
   try {
-    const response = await fetch(`${API_URL}/active-user`);
+    const response = await fetch(`${API_URL}/active-user`, {
+      headers: getHeaders()
+    });
     if (!response.ok) return null;
     const data = await response.json();
     return data.activeUserId;
@@ -151,7 +168,7 @@ export async function setActiveUserId(userId) {
   try {
     await fetch(`${API_URL}/active-user`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ userId })
     });
   } catch (error) {
@@ -270,7 +287,8 @@ export function getWeekSummary(user) {
 export async function deleteUser(userId) {
   try {
     const response = await fetch(`${API_URL}/users/${userId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getHeaders()
     });
     
     if (!response.ok) throw new Error('Failed to delete user');
