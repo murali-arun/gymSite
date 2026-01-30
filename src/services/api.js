@@ -154,11 +154,31 @@ Focus on progressive overload, proper recovery, and personalized recommendations
       cleanResponse = cleanResponse.replace(/```\n?/g, '');
     }
     
+    // Remove any trailing commas before closing braces/brackets (common JSON error)
+    cleanResponse = cleanResponse.replace(/,(\s*[}\]])/g, '$1');
+    
     console.log('=== CLEANED RESPONSE ===');
     console.log(cleanResponse);
     console.log('========================');
 
-    const workoutData = JSON.parse(cleanResponse);
+    let workoutData;
+    try {
+      workoutData = JSON.parse(cleanResponse);
+    } catch (parseError) {
+      console.error('=== JSON PARSE ERROR ===');
+      console.error('Parse error:', parseError);
+      console.error('Attempted to parse:', cleanResponse);
+      console.error('========================');
+      throw new Error(`Invalid JSON from AI: ${parseError.message}`);
+    }
+    
+    // Validate the structure
+    if (!workoutData.exercises || !Array.isArray(workoutData.exercises)) {
+      console.error('=== INVALID WORKOUT STRUCTURE ===');
+      console.error('Missing or invalid exercises array:', workoutData);
+      console.error('==================================');
+      throw new Error('AI response missing exercises array');
+    }
     
     console.log('=== PARSED WORKOUT DATA ===');
     console.log(JSON.stringify(workoutData, null, 2));
@@ -168,15 +188,16 @@ Focus on progressive overload, proper recovery, and personalized recommendations
       id: Date.now(),
       date: new Date().toISOString().split('T')[0],
       exercises: workoutData.exercises,
-      aiSuggestion: workoutData.summary,
+      aiSuggestion: workoutData.summary || 'Workout generated',
       generatedAt: new Date().toISOString(),
       aiResponse: response // Store full AI response for conversation history
     };
   } catch (error) {
-    console.error('=== ERROR PARSING AI RESPONSE ===');
+    console.error('=== ERROR GENERATING WORKOUT ===');
     console.error('Error:', error);
-    console.error('=================================');
-    throw new Error('Failed to parse workout from AI. Please try again.');
+    console.error('Error message:', error.message);
+    console.error('================================');
+    throw error; // Re-throw with original error message
   }
 }
 
