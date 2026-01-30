@@ -14,7 +14,7 @@ const DATA_FILE = path.join(__dirname, 'data', 'users.json');
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['http://your-domain.com', 'https://your-domain.com']
+    ? ['https://gym.anmious.cloud', 'http://gym.anmious.cloud']
     : '*'
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -157,6 +157,39 @@ app.post('/api/active-user', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to set active user' });
+  }
+});
+
+// Generate workout using LiteLLM
+app.post('/api/generate-workout', async (req, res) => {
+  try {
+    const { messages } = req.body;
+    
+    const response = await fetch(process.env.LITELLM_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.LITELLM_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: process.env.LITELLM_MODEL,
+        messages
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('LiteLLM API error:', errorText);
+      return res.status(response.status).json({ 
+        error: `AI API request failed: ${response.status} ${response.statusText}` 
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Error calling LiteLLM:', error);
+    res.status(500).json({ error: 'Failed to generate workout' });
   }
 });
 

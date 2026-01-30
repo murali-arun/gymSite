@@ -1,26 +1,21 @@
-const API_URL = 'http://89.116.157.50:4000/v1/chat/completions';
-const API_KEY = 'sk-WO4jtfpfvQtxPLaoffOrYQ';
-const MODEL = 'claude-3-7-sonnet-latest';
+const BACKEND_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 async function callLiteLLM(messages) {
   console.log('=== SENDING TO AI ===');
   console.log('Messages:', JSON.stringify(messages, null, 2));
   console.log('=====================');
   
-  const response = await fetch(API_URL, {
+  const response = await fetch(`${BACKEND_API_URL}/generate-workout`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      model: MODEL,
-      messages
-    })
+    body: JSON.stringify({ messages })
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `API request failed: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
