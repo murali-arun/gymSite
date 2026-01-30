@@ -4,12 +4,14 @@ import WorkoutGenerator from './components/WorkoutGenerator';
 import ExerciseTracker from './components/ExerciseTracker';
 import History from './components/History';
 import Progress from './components/Progress';
+import Achievements from './components/Achievements';
+import ProgressDashboard from './components/ProgressDashboard';
 import { getUser, getActiveUserId, setActiveUserId } from './utils/storage';
 
 function App() {
   const [activeUserId, setActiveUserIdState] = useState(null);
   const [user, setUser] = useState(null);
-  const [view, setView] = useState('home'); // home, tracker, history, progress
+  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard
   const [currentWorkout, setCurrentWorkout] = useState(null);
 
   useEffect(() => {
@@ -100,6 +102,26 @@ function App() {
                 Home
               </button>
               <button
+                onClick={() => setView('dashboard')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  view === 'dashboard'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                📊 Stats
+              </button>
+              <button
+                onClick={() => setView('achievements')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  view === 'achievements'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                🏆 Badges
+              </button>
+              <button
                 onClick={() => setView('progress')}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   view === 'progress'
@@ -164,6 +186,18 @@ function App() {
           <Progress
             user={user}
             onRefresh={refreshUserData}
+          />
+        )}
+        
+        {view === 'achievements' && (
+          <Achievements
+            user={user}
+          />
+        )}
+        
+        {view === 'dashboard' && (
+          <ProgressDashboard
+            user={user}
           />
         )}
       </main>
