@@ -6,7 +6,7 @@ services:
       context: ./backend
     container_name: gym-tracker-backend
     ports:
-      - "3001:3001"
+      - "3002:3002"
     volumes:
       - ./backend/data:/app/data
     restart: unless-stopped

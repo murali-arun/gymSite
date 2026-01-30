@@ -70,7 +70,7 @@ jobs:
             
             # Create backend .env
             cat > backend/.env << EOF
-            PORT=3001
+            PORT=3002
             NODE_ENV=production
             LITELLM_API_URL=${{ secrets.LITELLM_API_URL }}
             LITELLM_API_KEY=${{ secrets.LITELLM_API_KEY }}

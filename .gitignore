@@ -1,3 +1,6 @@
+.env.example
+DEPLOYMENT.md
+backend/.env.example
 # Dependencies
 node_modules/
 
