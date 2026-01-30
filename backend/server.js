@@ -166,6 +166,13 @@ app.post('/api/generate-workout', async (req, res) => {
   try {
     const { messages } = req.body;
     
+    console.log('=== GENERATE WORKOUT REQUEST ===');
+    console.log('LITELLM_API_URL:', process.env.LITELLM_API_URL);
+    console.log('LITELLM_MODEL:', process.env.LITELLM_MODEL);
+    console.log('Has API Key:', !!process.env.LITELLM_API_KEY);
+    console.log('Message count:', messages?.length);
+    console.log('================================');
+    
     const response = await fetch(process.env.LITELLM_API_URL, {
       method: 'POST',
       headers: {
@@ -180,17 +187,31 @@ app.post('/api/generate-workout', async (req, res) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('LiteLLM API error:', errorText);
+      console.error('=== LITELLM API ERROR ===');
+      console.error('Status:', response.status, response.statusText);
+      console.error('Response:', errorText);
+      console.error('=========================');
       return res.status(response.status).json({ 
-        error: `AI API request failed: ${response.status} ${response.statusText}` 
+        error: `AI API request failed: ${response.status} ${response.statusText}`,
+        details: errorText
       });
     }
 
     const data = await response.json();
+    console.log('=== LITELLM SUCCESS ===');
+    console.log('Got response with', data.choices?.length, 'choices');
+    console.log('=======================');
     res.json(data);
   } catch (error) {
-    console.error('Error calling LiteLLM:', error);
-    res.status(500).json({ error: 'Failed to generate workout' });
+    console.error('=== ERROR CALLING LITELLM ===');
+    console.error('Error:', error);
+    console.error('Error message:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('=============================');
+    res.status(500).json({ 
+      error: 'Failed to generate workout',
+      message: error.message 
+    });
   }
 });
 
