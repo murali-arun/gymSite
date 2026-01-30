@@ -1,16 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { getAllUsers, createUser, deleteUser } from '../utils/storage';
+import ProfileFormBuilder from './ProfileFormBuilder';
 
 function UserSelection({ onUserSelected }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
+  const [useFormBuilder, setUseFormBuilder] = useState(true); // Toggle between form/raw prompt
   const [newUserData, setNewUserData] = useState({
     name: '',
     initialPrompt: ''
   });
+  const [formData, setFormData] = useState({
+    // Personal Info
+    height: '',
+    weight: '',
+    targetWeight: '',
+    goal: '',
+    
+    // Training Background
+    trainingDays: '4',
+    equipment: [],
+    injuries: '',
+    
+    // Current Strength (optional)
+    squat: '',
+    rdl: '',
+    row: '',
+    pushup: '',
+    
+    // Cardio (optional)
+    cardioType: [],
+    cardioDistance: '',
+    cardioTime: '',
+    
+    // Preferences
+    focusAreas: [],
+    constraints: ''
+  });
   const [creating, setCreating] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // { userId, name }
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleteInput, setDeleteInput] = useState('');
 
   useEffect(() => {
@@ -28,20 +57,58 @@ function UserSelection({ onUserSelected }) {
   };
 
   const handleCreateUser = async () => {
-    if (!newUserData.name.trim() || !newUserData.initialPrompt.trim()) {
-      alert('Please enter both name and initial information');
+    const promptToUse = useFormBuilder ? generatePromptFromForm() : newUserData.initialPrompt;
+    
+    if (!newUserData.name.trim() || !promptToUse.trim()) {
+      alert('Please fill in all required fields');
       return;
     }
 
     setCreating(true);
     try {
-      const user = await createUser(newUserData.name.trim(), newUserData.initialPrompt.trim());
+      const user = await createUser(newUserData.name.trim(), promptToUse.trim());
       onUserSelected(user.id);
     } catch (error) {
       alert('Failed to create user. Please try again.');
     } finally {
       setCreating(false);
     }
+  };
+
+  const generatePromptFromForm = () => {
+    const equipmentList = formData.equipment.join(', ') || 'dumbbells';
+    const cardioTypes = formData.cardioType.join(', ') || 'none';
+    const focusList = formData.focusAreas.join(', ') || 'general fitness';
+    
+    return `You are an elite strength & conditioning coach (army PT / athletic performance style) helping me build muscle, improve conditioning, and lose fat WITHOUT burning out or getting injured.
+
+**My Basics / Goals:**
+- Height: ${formData.height || 'not specified'}
+- Current Weight: ${formData.weight || 'not specified'}
+- Target Weight: ${formData.targetWeight || 'lose fat and build muscle'}
+- Primary Goal: ${formData.goal || 'Build muscle, improve conditioning, lose fat'}
+- Training Days per Week: ${formData.trainingDays}
+- Available Equipment: ${equipmentList}
+- Injuries/Limitations: ${formData.injuries || 'None'}
+
+**Current Strength Levels:**${formData.squat ? `\n- Squats: ${formData.squat}` : ''}${formData.rdl ? `\n- RDL/Deadlift: ${formData.rdl}` : ''}${formData.row ? `\n- Rows: ${formData.row}` : ''}${formData.pushup ? `\n- Push-ups: ${formData.pushup}` : ''}
+${!formData.squat && !formData.rdl && !formData.row && !formData.pushup ? '- Building baseline strength' : ''}
+
+**Cardio/Conditioning:**
+- Types: ${cardioTypes}${formData.cardioDistance ? `\n- Recent Distance: ${formData.cardioDistance}` : ''}${formData.cardioTime ? `\n- Recent Time: ${formData.cardioTime}` : ''}
+
+**Training Focus:**
+- Areas: ${focusList}
+- Constraints/Preferences: ${formData.constraints || 'None'}
+
+**What I need from you:**
+1. Design progressive workout programs based on my equipment and goals
+2. Brutally but constructively critique my training patterns
+3. Give specific progression rules (sets, reps, weights) for the next 4-6 weeks
+4. Adjust workouts based on my feedback and recovery
+5. Keep me accountable while preventing burnout and injury
+
+Respond with clear sections and specific numbers. Update my program as I progress.`;
   };
 
   const handleDeleteClick = (user) => {
@@ -186,7 +253,7 @@ function UserSelection({ onUserSelected }) {
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Your Name
+                    Your Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -197,21 +264,50 @@ function UserSelection({ onUserSelected }) {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Initial Information
-                  </label>
-                  <textarea
-                    placeholder="Tell the AI about your fitness level, goals, injuries, available equipment, workout frequency, etc.&#10;&#10;Example: I'm a beginner, working out 3-4 times per week. Goals are to build muscle and lose fat. I have dumbbells and a bench at home. No knee injuries."
-                    value={newUserData.initialPrompt}
-                    onChange={(e) => setNewUserData({ ...newUserData, initialPrompt: e.target.value })}
-                    rows={8}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    💡 Be detailed - this helps the AI create better personalized workouts
-                  </p>
+                {/* Toggle between Form Builder and Raw Prompt */}
+                <div className="flex items-center gap-3 p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => setUseFormBuilder(!useFormBuilder)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                      useFormBuilder ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'
+                    }`}
+                  >
+                    📝 Use Form
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUseFormBuilder(!useFormBuilder)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                      !useFormBuilder ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'
+                    }`}
+                  >
+                    ✏️ Write Custom Prompt
+                  </button>
                 </div>
+
+                {useFormBuilder ? (
+                  <ProfileFormBuilder
+                    formData={formData}
+                    onChange={setFormData}
+                  />
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Custom Training Prompt <span className="text-red-400">*</span>
+                    </label>
+                    <textarea
+                      placeholder="Tell the AI about your fitness level, goals, injuries, available equipment, workout frequency, etc.&#10;&#10;Example: I'm a beginner, working out 3-4 times per week. Goals are to build muscle and lose fat. I have dumbbells and a bench at home. No knee injuries."
+                      value={newUserData.initialPrompt}
+                      onChange={(e) => setNewUserData({ ...newUserData, initialPrompt: e.target.value })}
+                      rows={12}
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      💡 Be detailed - this helps the AI create better personalized workouts
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3">
