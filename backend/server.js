@@ -249,6 +249,16 @@ app.get('/api/health', (req, res) => {
 async function start() {
   await ensureDataDir();
   
+  // Log environment configuration (without sensitive values)
+  console.log('=== BACKEND CONFIGURATION ===');
+  console.log('PORT:', PORT);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('LITELLM_API_URL:', process.env.LITELLM_API_URL || 'NOT SET');
+  console.log('LITELLM_MODEL:', process.env.LITELLM_MODEL || 'NOT SET');
+  console.log('Has LITELLM_API_KEY:', !!process.env.LITELLM_API_KEY);
+  console.log('Has API_SECRET:', !!process.env.API_SECRET);
+  console.log('============================');
+  
   app.listen(PORT, () => {
     console.log(`🏋️ Gym Tracker API running on http://localhost:${PORT}`);
     console.log(`📁 Data stored in: ${DATA_FILE}`);
