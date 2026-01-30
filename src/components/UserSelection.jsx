@@ -21,15 +21,16 @@ function UserSelection({ onUserSelected }) {
     // Training Background
     trainingDays: '4',
     equipment: [],
+    experienceLevel: '',
     injuries: '',
     
-    // Current Strength (optional)
+    // Current Strength (optional - shown based on experience)
     squat: '',
     rdl: '',
     row: '',
     pushup: '',
     
-    // Cardio (optional)
+    // Cardio (optional - shown if selected)
     cardioType: [],
     cardioDistance: '',
     cardioTime: '',
