@@ -5,6 +5,8 @@ services:
     build:
       context: ./backend
     container_name: gym-tracker-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "3002:3002"
     volumes:
