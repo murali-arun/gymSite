@@ -180,7 +180,6 @@ Focus on progressive overload, proper recovery, and personalized recommendations
   } catch (error) {
     console.error('=== ERROR PARSING AI RESPONSE ===');
     console.error('Error:', error);
-    console.error('Response was:', response);
     console.error('=================================');
     throw new Error('Failed to parse workout from AI. Please try again.');
   }
