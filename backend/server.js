@@ -12,18 +12,32 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 const DATA_FILE = path.join(__dirname, 'data', 'users.json');
 
-// Middleware
+// Middleware - CORS must come first
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://gym.anmious.cloud', 'http://gym.anmious.cloud']
-    : '*'
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = process.env.NODE_ENV === 'production'
+      ? ['https://gym.anmious.cloud', 'http://gym.anmious.cloud', 'http://localhost:5173', 'http://localhost:5174']
+      : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for now to debug
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
 }));
 app.use(express.json({ limit: '50mb' }));
 
 // API Key validation middleware
 const validateApiKey = (req, res, next) => {
-  // Skip validation for health check
-  if (req.path === '/api/health') {
+  // Skip validation for health check and OPTIONS requests
+  if (req.path === '/api/health' || req.method === 'OPTIONS') {
     return next();
   }
 
@@ -31,7 +45,7 @@ const validateApiKey = (req, res, next) => {
   const expectedKey = process.env.API_SECRET;
 
   if (!expectedKey) {
-    console.warn('WARNING: API_SECRET not configured!');
+    console.warn('WARNING: API_SECRET not configured - allowing request');
     return next(); // Allow in dev if not configured
   }
 
