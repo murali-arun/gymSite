@@ -15,6 +15,30 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   const [elapsedTime, setElapsedTime] = useState(0);
   const [setTimestamps, setSetTimestamps] = useState([]);
   const timerRef = useRef(null);
+  
+  // Pre-workout status
+  const [showPreWorkout, setShowPreWorkout] = useState(false);
+  const [preWorkoutData, setPreWorkoutData] = useState({
+    energyLevel: 7,
+    sleepHours: 7,
+    sleepQuality: 'good',
+    stressLevel: 5,
+    soreness: '',
+    mealsToday: '',
+    notes: ''
+  });
+  
+  // Post-workout feedback
+  const [showPostWorkout, setShowPostWorkout] = useState(false);
+  const [postWorkoutData, setPostWorkoutData] = useState({
+    difficulty: 7,
+    overallFeeling: 'good',
+    predictedSoreness: 'moderate',
+    notes: ''
+  });
+  
+  // Set-level tracking
+  const [showAdvancedTracking, setShowAdvancedTracking] = useState(false);
 
   // Timer effect for elapsed time
   useEffect(() => {
@@ -41,6 +65,11 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   };
 
   const handleStartWorkout = () => {
+    setShowPreWorkout(true);
+  };
+  
+  const confirmStartWorkout = () => {
+    setShowPreWorkout(false);
     setCountdown(5);
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
@@ -100,6 +129,9 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
   const updateSet = (exerciseIndex, setIndex, field, value) => {
     const updated = [...exercises];
+    if (!updated[exerciseIndex].sets[setIndex]) {
+      updated[exerciseIndex].sets[setIndex] = {};
+    }
     updated[exerciseIndex].sets[setIndex][field] = value;
     setExercises(updated);
   };
@@ -116,30 +148,109 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     updated[exerciseIndex].sets.push({
       weight: lastSet?.weight || 0,
       reps: lastSet?.reps || 0,
-      completed: false
+      completed: false,
+      rpe: null,
+      rir: null,
+      toFailure: false,
+      formBreakdown: false,
+      pain: false,
+      notes: ''
     });
     setExercises(updated);
   };
 
+  const handleCompleteClick = () => {
+    setShowPostWorkout(true);
+  };
+  
   const handleComplete = async () => {
+    setShowPostWorkout(false);
     setCompleting(true);
     try {
       const completedWorkout = {
         ...workout,
         exercises,
         completedAt: new Date().toISOString(),
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        setTimestamps,
+        totalDuration: elapsedTime,
+        preWorkout: preWorkoutData,
+        postWorkout: postWorkoutData
       };
 
       // Send feedback to AI
       const feedback = await sendWorkoutFeedback(user, completedWorkout);
       completedWorkout.aiFeedback = feedback;
 
-      // Add workout completion to conversation history
-      const workoutSummary = exercises.map(e => 
-        `${e.name}: ${e.sets.filter(s => s.completed).length}/${e.sets.length} sets completed`
-      ).join(', ');
-      await addConversationMessage(user.id, 'user', `Completed workout: ${workoutSummary}`);
+      // Calculate timing insights
+      const totalDuration = elapsedTime;
+      const avgRestTime = setTimestamps.length > 1 
+        ? Math.round(setTimestamps.slice(1).reduce((sum, ts, idx) => {
+            return sum + (ts.elapsedSeconds - setTimestamps[idx].elapsedSeconds);
+          }, 0) / (setTimestamps.length - 1))
+        : 0;
+
+      // Build detailed workout summary with individual exercise timing
+      let detailedSummary = 'Completed workout:\n';
+      
+      // Add pre-workout status if provided
+      if (preWorkoutData.energyLevel || preWorkoutData.sleepHours) {
+        detailedSummary += `\nPre-workout: Energy ${preWorkoutData.energyLevel}/10, Sleep ${preWorkoutData.sleepHours}h (${preWorkoutData.sleepQuality}), Stress ${preWorkoutData.stressLevel}/10`;
+        if (preWorkoutData.soreness) detailedSummary += `\nSoreness: ${preWorkoutData.soreness}`;
+        if (preWorkoutData.mealsToday) detailedSummary += `\nNutrition: ${preWorkoutData.mealsToday}`;
+        if (preWorkoutData.notes) detailedSummary += `\nNotes: ${preWorkoutData.notes}`;
+      }
+      
+      exercises.forEach((exercise, exIdx) => {
+        const completedSetsForEx = exercise.sets.filter(s => s.completed);
+        detailedSummary += `\n\n${exercise.name}: ${completedSetsForEx.length}/${exercise.sets.length} sets`;
+        
+        // Add set details with weights, reps, and RPE/RIR
+        const setDetails = completedSetsForEx.map((set, setIdx) => {
+          let detail = `${set.weight}lbs x ${set.reps}`;
+          if (set.rpe) detail += ` @RPE${set.rpe}`;
+          if (set.rir !== null && set.rir !== undefined) detail += ` (${set.rir}RIR)`;
+          if (set.toFailure) detail += ' [failure]';
+          if (set.formBreakdown) detail += ' [form breakdown]';
+          if (set.pain) detail += ' [pain]';
+          if (set.notes) detail += ` - ${set.notes}`;
+          return detail;
+        }).join('\n  ');
+        if (setDetails) {
+          detailedSummary += `\n  ${setDetails}`;
+        }
+        
+        // Add timing for this exercise's sets if available
+        if (setTimestamps.length > 0) {
+          const exerciseTimes = setTimestamps.filter(ts => ts.exerciseIndex === exIdx);
+          if (exerciseTimes.length > 0) {
+            const restTimes = exerciseTimes.slice(1).map((ts, idx) => {
+              const prevTime = idx === 0 && exIdx > 0 
+                ? setTimestamps.find(t => t.exerciseIndex === exIdx - 1 && t.setIndex === exercises[exIdx - 1].sets.length - 1)?.elapsedSeconds || exerciseTimes[0].elapsedSeconds
+                : exerciseTimes[idx].elapsedSeconds;
+              return formatTime(ts.elapsedSeconds - prevTime);
+            });
+            
+            if (restTimes.length > 0) {
+              detailedSummary += `\n  Rest: ${restTimes.join(', ')}`;
+            }
+          }
+        }
+      });
+      
+      const timingInfo = workoutStarted && totalDuration > 0
+        ? `\n\nTotal duration: ${formatTime(totalDuration)}${avgRestTime > 0 ? `\nAvg rest: ${formatTime(avgRestTime)}` : ''}`
+        : '';
+      
+      // Add post-workout feedback if provided
+      let postWorkoutInfo = '';
+      if (postWorkoutData.difficulty || postWorkoutData.overallFeeling) {
+        postWorkoutInfo += `\n\nPost-workout: Difficulty ${postWorkoutData.difficulty}/10, Feeling: ${postWorkoutData.overallFeeling}`;
+        if (postWorkoutData.predictedSoreness) postWorkoutInfo += `, Expected soreness: ${postWorkoutData.predictedSoreness}`;
+        if (postWorkoutData.notes) postWorkoutInfo += `\nNotes: ${postWorkoutData.notes}`;
+      }
+      
+      await addConversationMessage(user.id, 'user', `${detailedSummary}${timingInfo}${postWorkoutInfo}`);
       await addConversationMessage(user.id, 'assistant', feedback);
 
       // Save to user's history
@@ -176,6 +287,196 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
   return (
     <div className="space-y-6">
+      {/* Pre-Workout Modal */}
+      {showPreWorkout && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold text-white mb-4">Pre-Workout Check-in</h3>
+            <p className="text-gray-400 text-sm mb-6">Optional: Help the AI understand your readiness</p>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Energy Level</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={preWorkoutData.energyLevel}
+                    onChange={(e) => setPreWorkoutData({...preWorkoutData, energyLevel: e.target.value})}
+                    className="w-full"
+                  />
+                  <div className="text-center text-white font-bold">{preWorkoutData.energyLevel}/10</div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Stress Level</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={preWorkoutData.stressLevel}
+                    onChange={(e) => setPreWorkoutData({...preWorkoutData, stressLevel: e.target.value})}
+                    className="w-full"
+                  />
+                  <div className="text-center text-white font-bold">{preWorkoutData.stressLevel}/10</div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Sleep Hours</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={preWorkoutData.sleepHours}
+                    onChange={(e) => setPreWorkoutData({...preWorkoutData, sleepHours: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Sleep Quality</label>
+                  <select
+                    value={preWorkoutData.sleepQuality}
+                    onChange={(e) => setPreWorkoutData({...preWorkoutData, sleepQuality: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  >
+                    <option value="poor">Poor</option>
+                    <option value="fair">Fair</option>
+                    <option value="good">Good</option>
+                    <option value="excellent">Excellent</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Current Soreness/Recovery</label>
+                <input
+                  type="text"
+                  placeholder="e.g., legs still sore, feeling fresh"
+                  value={preWorkoutData.soreness}
+                  onChange={(e) => setPreWorkoutData({...preWorkoutData, soreness: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Meals/Nutrition Today</label>
+                <input
+                  type="text"
+                  placeholder="e.g., 3 meals, high protein, ate 2h ago"
+                  value={preWorkoutData.mealsToday}
+                  onChange={(e) => setPreWorkoutData({...preWorkoutData, mealsToday: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Additional Notes</label>
+                <textarea
+                  placeholder="Anything else to mention?"
+                  value={preWorkoutData.notes}
+                  onChange={(e) => setPreWorkoutData({...preWorkoutData, notes: e.target.value})}
+                  rows={2}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white resize-none"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={confirmStartWorkout}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg"
+              >
+                Start Workout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Post-Workout Modal */}
+      {showPostWorkout && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 max-w-lg w-full">
+            <h3 className="text-2xl font-bold text-white mb-4">Post-Workout Feedback</h3>
+            <p className="text-gray-400 text-sm mb-6">Optional: Help the AI learn from this session</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Overall Difficulty</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={postWorkoutData.difficulty}
+                  onChange={(e) => setPostWorkoutData({...postWorkoutData, difficulty: e.target.value})}
+                  className="w-full"
+                />
+                <div className="text-center text-white font-bold">{postWorkoutData.difficulty}/10</div>
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">How Do You Feel?</label>
+                <select
+                  value={postWorkoutData.overallFeeling}
+                  onChange={(e) => setPostWorkoutData({...postWorkoutData, overallFeeling: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="exhausted">Exhausted</option>
+                  <option value="tired">Tired</option>
+                  <option value="good">Good</option>
+                  <option value="great">Great</option>
+                  <option value="amazing">Amazing - could do more!</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Expected Soreness</label>
+                <select
+                  value={postWorkoutData.predictedSoreness}
+                  onChange={(e) => setPostWorkoutData({...postWorkoutData, predictedSoreness: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="none">None/Minimal</option>
+                  <option value="mild">Mild</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="severe">Severe/Very sore</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Notes</label>
+                <textarea
+                  placeholder="Exercises that felt good/bad, any concerns, etc."
+                  value={postWorkoutData.notes}
+                  onChange={(e) => setPostWorkoutData({...postWorkoutData, notes: e.target.value})}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white resize-none"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowPostWorkout(false)}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-lg"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleComplete}
+                disabled={completing}
+                className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 rounded-lg"
+              >
+                {completing ? 'Saving...' : 'Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Countdown Overlay */}
       {countdown !== null && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -264,6 +565,86 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                 />
               </div>
             </div>
+            
+            {/* Advanced Tracking Toggle */}
+            <button
+              onClick={() => setShowAdvancedTracking(!showAdvancedTracking)}
+              className="w-full text-sm text-blue-400 hover:text-blue-300 mb-3"
+            >
+              {showAdvancedTracking ? '− Hide' : '+ Show'} Advanced Tracking (RPE, RIR, Notes)
+            </button>
+            
+            {showAdvancedTracking && (
+              <div className="space-y-3 mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">RPE (1-10)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      placeholder="Optional"
+                      value={exercises[currentExerciseIndex].sets[currentSetIndex].rpe || ''}
+                      onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'rpe', e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">RIR (0-5)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="5"
+                      placeholder="Optional"
+                      value={exercises[currentExerciseIndex].sets[currentSetIndex].rir ?? ''}
+                      onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'rir', e.target.value !== '' ? parseInt(e.target.value) : null)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exercises[currentExerciseIndex].sets[currentSetIndex].toFailure || false}
+                      onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'toFailure', e.target.checked)}
+                      className="rounded"
+                    />
+                    To Failure
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exercises[currentExerciseIndex].sets[currentSetIndex].formBreakdown || false}
+                      onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'formBreakdown', e.target.checked)}
+                      className="rounded"
+                    />
+                    Form Breakdown
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exercises[currentExerciseIndex].sets[currentSetIndex].pain || false}
+                      onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'pain', e.target.checked)}
+                      className="rounded"
+                    />
+                    Pain/Discomfort
+                  </label>
+                </div>
+                
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Notes</label>
+                  <input
+                    type="text"
+                    placeholder="Any observations about this set..."
+                    value={exercises[currentExerciseIndex].sets[currentSetIndex].notes || ''}
+                    onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'notes', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  />
+                </div>
+              </div>
+            )}
 
             {setTimestamps.length > 0 && (
               <div className="text-center text-sm text-gray-400">
@@ -305,7 +686,7 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         >
           <h3 className="text-xl font-bold text-white mb-4">{exercise.name}</h3>
           
-          <div className="space-y-3">
+          <div className="space-yClick-3">
             {exercise.sets.map((set, setIndex) => (
               <div
                 key={setIndex}
