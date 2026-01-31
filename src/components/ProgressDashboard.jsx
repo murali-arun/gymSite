@@ -156,7 +156,8 @@ function ProgressDashboard({ user }) {
           <div className="space-y-3">
             {exercises.slice(0, 5).map(name => {
               // Safety check: ensure prs entry exists
-              if (!stats.prs[name]) return null;
+              const prData = stats.prs?.[name];
+              if (!prData) return null;
               
               return (
               <div
@@ -167,11 +168,11 @@ function ProgressDashboard({ user }) {
                 <div className="flex justify-between items-center">
                   <div className="font-medium text-white">{name}</div>
                   <div className="text-sm text-gray-400">
-                    {stats.prs[name].totalSets} sets · Max: {stats.prs[name].maxWeight}lbs
+                    {prData.totalSets} sets · Max: {prData.maxWeight}lbs
                   </div>
                 </div>
                 
-                {selectedExercise === name && stats.exerciseMap[name] && (
+                {selectedExercise === name && stats.exerciseMap?.[name] && (
                   <div className="mt-3 pt-3 border-t border-gray-700">
                     <div className="text-sm text-gray-400 mb-2">Recent Progress:</div>
                     <div className="space-y-1">
