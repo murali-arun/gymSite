@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { getAllUsers, createUser, deleteUser } from '../utils/storage';
+import { getAllUsers, createUser, deleteUser, getUser } from '../utils/storage';
 import ProfileFormBuilder from './ProfileFormBuilder';
 
 function UserSelection({ onUserSelected }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
+  const [loginName, setLoginName] = useState(''); // For typing name to login
+  const [loginError, setLoginError] = useState('');
   const [useFormBuilder, setUseFormBuilder] = useState(true); // Toggle between form/raw prompt
   const [newUserData, setNewUserData] = useState({
     name: '',
@@ -53,8 +55,28 @@ function UserSelection({ onUserSelected }) {
     loadUsers();
   }, []);
 
-  const handleSelectUser = (userId) => {
-    onUserSelected(userId);
+  const handleSelectUser = async (nameInput) => {
+    setLoginError('');
+    const trimmedName = nameInput.trim();
+    
+    if (!trimmedName) {
+      setLoginError('Please enter your name');
+      return;
+    }
+    
+    // Find user by name (case-insensitive)
+    const user = users.find(u => u.name.toLowerCase() === trimmedName.toLowerCase());
+    
+    if (user) {
+      onUserSelected(user.id);
+    } else {
+      setLoginError(`No profile found for "${trimmedName}". Please check spelling or create a new profile.`);
+    }
+  };
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    handleSelectUser(loginName);
   };
 
   const handleCreateUser = async () => {
@@ -191,60 +213,46 @@ Respond with clear sections and specific numbers. Update my program as I progres
           </div>
         )}
 
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">{!showNewUserForm ? (
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
+          {!showNewUserForm ? (
             <>
-              <h2 className="text-2xl font-bold text-white mb-6">Select Your Profile</h2>
+              <h2 className="text-2xl font-bold text-white mb-6">Enter Your Name</h2>
               
-              <div className="space-y-3 mb-6">
-                {users.map((user) => (
-                  <div
-                    key={user.id}
-                    className="w-full bg-gray-700/50 border border-gray-600 hover:border-blue-500 rounded-lg transition-all group"
-                  >
-                    <div className="flex items-center">
-                      <button
-                        onClick={() => handleSelectUser(user.id)}
-                        className="flex-1 p-4 text-left"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
-                              {user.name}
-                            </h3>
-                            <p className="text-sm text-gray-400 mt-1">
-                              {user.workouts.length} workouts completed
-                            </p>
-                          </div>
-                          <svg
-                            className="w-6 h-6 text-gray-500 group-hover:text-blue-400 transition-colors"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(user)}
-                        className="px-4 py-4 text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all border-l border-gray-600"
-                        title="Delete user"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <form onSubmit={handleLoginSubmit} className="space-y-4 mb-6">
+                <div>
+                  <input
+                    type="text"
+                    value={loginName}
+                    onChange={(e) => {
+                      setLoginName(e.target.value);
+                      setLoginError('');
+                    }}
+                    placeholder="Type your name..."
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                  {loginError && (
+                    <p className="mt-2 text-sm text-red-400">{loginError}</p>
+                  )}
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg shadow-blue-900/50"
+                >
+                  Continue
+                </button>
+              </form>
 
-              <button
-                onClick={() => setShowNewUserForm(true)}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-lg transition-all shadow-lg shadow-blue-900/50"
-              >
-                + Create New Profile
-              </button>
+              <div className="text-center">
+                <p className="text-sm text-gray-400 mb-3">Don't have a profile?</p>
+                <button
+                  onClick={() => setShowNewUserForm(true)}
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                >
+                  Create New Profile →
+                </button>
+              </div>
             </>
           ) : (
             <>
