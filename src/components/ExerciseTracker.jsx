@@ -39,6 +39,32 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   
   // Set-level tracking
   const [showAdvancedTracking, setShowAdvancedTracking] = useState(false);
+  
+  // Core exercise selector
+  const [showCoreSelector, setShowCoreSelector] = useState(false);
+  const [coreExerciseIndex, setCoreExerciseIndex] = useState(null);
+  
+  // Core exercise variations
+  const coreExerciseOptions = [
+    'Dead Bug',
+    'Toe Touches',
+    'Bicycle Crunches',
+    'Plank',
+    'Side Plank',
+    'Mountain Climbers',
+    'Russian Twists',
+    'Leg Raises',
+    'Bird Dogs',
+    'Hollow Body Hold'
+  ];
+  
+  // Helper function to detect bodyweight exercises
+  const isBodyweightExercise = (exercise) => {
+    const bodyweightKeywords = ['plank', 'push-up', 'pull-up', 'dip', 'burpee', 'jump', 'crunch', 'sit-up', 'ab', 'core', 'dead bug', 'toe touch', 'bicycle', 'mountain climber', 'russian twist', 'leg raise', 'bird dog', 'hollow'];
+    const exerciseName = exercise.name.toLowerCase();
+    return bodyweightKeywords.some(keyword => exerciseName.includes(keyword)) || 
+           (exercise.sets && exercise.sets.every(set => set.weight === 0));
+  };
 
   // Timer effect for elapsed time
   useEffect(() => {
@@ -287,6 +313,44 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
   return (
     <div className="space-y-6">
+      {/* Core Exercise Selector Modal */}
+      {showCoreSelector && coreExerciseIndex !== null && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 max-w-md w-full">
+            <h3 className="text-2xl font-bold text-white mb-2">Choose Core Exercise</h3>
+            <p className="text-gray-400 text-sm mb-4">Select an alternative for this set</p>
+            
+            <div className="grid grid-cols-2 gap-2 mb-6 max-h-[60vh] overflow-y-auto">
+              {coreExerciseOptions.map((exerciseName) => (
+                <button
+                  key={exerciseName}
+                  onClick={() => {
+                    const updated = [...exercises];
+                    updated[coreExerciseIndex].name = exerciseName;
+                    setExercises(updated);
+                    setShowCoreSelector(false);
+                    setCoreExerciseIndex(null);
+                  }}
+                  className="py-3 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-all active:scale-95"
+                >
+                  {exerciseName}
+                </button>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => {
+                setShowCoreSelector(false);
+                setCoreExerciseIndex(null);
+              }}
+              className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Pre-Workout Modal */}
       {showPreWorkout && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -536,33 +600,99 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             <div className="text-sm text-blue-400 mb-2">
               Exercise {currentExerciseIndex + 1} of {exercises.length}
             </div>
-            <h2 className="text-4xl font-bold text-white mb-4">
-              {exercises[currentExerciseIndex].name}
-            </h2>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <h2 className="text-4xl font-bold text-white">
+                {exercises[currentExerciseIndex].name}
+              </h2>
+              {isBodyweightExercise(exercises[currentExerciseIndex]) && 
+               exercises[currentExerciseIndex].name.toLowerCase().includes('core') && (
+                <button
+                  onClick={() => {
+                    setCoreExerciseIndex(currentExerciseIndex);
+                    setShowCoreSelector(true);
+                  }}
+                  className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-all"
+                  title="Change core exercise"
+                >
+                  🔄 Change
+                </button>
+              )}
+            </div>
             <div className="text-2xl text-gray-300">
               Set {currentSetIndex + 1} of {exercises[currentExerciseIndex].sets.length}
             </div>
           </div>
 
           <div className="bg-gray-800/50 rounded-xl p-6 mb-6">
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Weight (lbs)</label>
-                <input
-                  type="number"
-                  value={exercises[currentExerciseIndex].sets[currentSetIndex].weight}
-                  onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'weight', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-xl text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            {/* Weight Selection - Hidden for bodyweight exercises */}
+            {!isBodyweightExercise(exercises[currentExerciseIndex]) && (
+              <div className="mb-5">
+                <label className="block text-xs font-medium text-gray-400 mb-2">Weight (lbs)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[-5, 0, 5].map((offset) => {
+                    const currentWeight = exercises[currentExerciseIndex].sets[currentSetIndex].weight || 0;
+                    const baseWeight = currentSetIndex > 0 
+                      ? exercises[currentExerciseIndex].sets[0].weight || 0
+                      : currentWeight;
+                    const weightOption = Math.max(0, baseWeight + offset);
+                    const isSelected = currentWeight === weightOption;
+                    
+                    return (
+                      <button
+                        key={offset}
+                        onClick={() => updateSet(currentExerciseIndex, currentSetIndex, 'weight', weightOption)}
+                        className={`py-3 px-3 rounded-lg font-semibold transition-all ${
+                          isSelected
+                            ? 'bg-blue-600 text-white ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-800'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600 active:scale-95'
+                        }`}
+                      >
+                        <div className="text-lg">{weightOption}</div>
+                        <div className="text-xs opacity-70 mt-0.5">
+                          {offset === 0 ? 'same' : `${offset > 0 ? '+' : ''}${offset} lb`}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Reps</label>
-                <input
-                  type="number"
-                  value={exercises[currentExerciseIndex].sets[currentSetIndex].reps}
-                  onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'reps', parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-xl text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            )}
+            
+            {/* Bodyweight indicator */}
+            {isBodyweightExercise(exercises[currentExerciseIndex]) && (
+              <div className="mb-5 py-3 px-4 bg-blue-900/20 border border-blue-700/50 rounded-lg text-center">
+                <span className="text-sm text-blue-400">🏋️ Bodyweight Exercise</span>
+              </div>
+            )}
+
+            {/* Reps Selection */}
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-gray-400 mb-2">Reps</label>
+              <div className="flex items-center gap-3 bg-gray-700/50 rounded-lg p-2">
+                <button
+                  onClick={() => {
+                    const currentReps = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
+                    updateSet(currentExerciseIndex, currentSetIndex, 'reps', Math.max(0, currentReps - 1));
+                  }}
+                  className="w-10 h-10 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded-md font-bold text-lg transition-all active:scale-95"
+                >
+                  −
+                </button>
+                <div className="flex-1 text-center">
+                  <div className="text-3xl font-bold text-white">
+                    {exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0}
+                  </div>
+                  <div className="text-xs text-gray-400">reps</div>
+                </div>
+                <button
+                  onClick={() => {
+                    const currentReps = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
+                    updateSet(currentExerciseIndex, currentSetIndex, 'reps', currentReps + 1);
+                  }}
+                  className="w-10 h-10 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded-md font-bold text-lg transition-all active:scale-95"
+                >
+                  +
+                </button>
               </div>
             </div>
             
@@ -711,24 +841,48 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                   )}
                 </button>
 
-                <div className="flex-1 flex gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs text-gray-400 mb-1">Weight (lbs)</label>
-                    <input
-                      type="number"
-                      value={set.weight}
-                      onChange={(e) => updateSet(exIndex, setIndex, 'weight', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-xs text-gray-400 mb-1">Reps</label>
-                    <input
-                      type="number"
-                      value={set.reps}
-                      onChange={(e) => updateSet(exIndex, setIndex, 'reps', parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                <div className={`flex-1 grid gap-2 ${isBodyweightExercise(exercise) ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  {!isBodyweightExercise(exercise) && (
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Weight</label>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => updateSet(exIndex, setIndex, 'weight', Math.max(0, (set.weight || 0) - 5))}
+                          className="w-7 h-7 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded text-xs font-bold transition-all active:scale-95"
+                        >
+                          −5
+                        </button>
+                        <div className="flex-1 px-2 py-1.5 bg-gray-600 rounded text-white text-center text-sm font-semibold">
+                          {set.weight || 0}
+                        </div>
+                        <button
+                          onClick={() => updateSet(exIndex, setIndex, 'weight', (set.weight || 0) + 5)}
+                          className="w-7 h-7 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded text-xs font-bold transition-all active:scale-95"
+                        >
+                          +5
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">{isBodyweightExercise(exercise) ? 'Reps / Duration (sec)' : 'Reps'}</label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => updateSet(exIndex, setIndex, 'reps', Math.max(0, (set.reps || 0) - 1))}
+                        className="w-7 h-7 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded text-sm font-bold transition-all active:scale-95"
+                      >
+                        −
+                      </button>
+                      <div className="flex-1 px-2 py-1.5 bg-gray-600 rounded text-white text-center text-sm font-semibold">
+                        {set.reps || 0}
+                      </div>
+                      <button
+                        onClick={() => updateSet(exIndex, setIndex, 'reps', (set.reps || 0) + 1)}
+                        className="w-7 h-7 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded text-sm font-bold transition-all active:scale-95"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
 

@@ -99,6 +99,22 @@ async function writeData(data) {
 
 // Routes
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Gym Tracker API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      users: '/api/users',
+      workout: '/api/workout',
+      feedback: '/api/workout/feedback',
+      summary: '/api/progress/summary'
+    }
+  });
+});
+
 // Get all users
 app.get('/api/users', async (req, res) => {
   try {

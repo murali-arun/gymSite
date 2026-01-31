@@ -13,13 +13,14 @@ function Progress({ user, onRefresh }) {
   const getCalendarData = () => {
     const days = [];
     const today = new Date();
+    const workouts = user?.workouts || [];
     
     for (let i = timeRange - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       
-      const workout = user.workouts.find(w => w.date === dateStr);
+      const workout = workouts.find(w => w.date === dateStr);
       
       days.push({
         date: dateStr,

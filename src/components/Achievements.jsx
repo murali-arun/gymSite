@@ -1,10 +1,10 @@
 import React from 'react';
 
 const BADGES = [
-  { id: 'first_workout', name: 'First Step', description: 'Complete your first workout', icon: '🎯', requirement: (user) => user.workouts.length >= 1 },
+  { id: 'first_workout', name: 'First Step', description: 'Complete your first workout', icon: '🎯', requirement: (user) => user?.workouts?.length >= 1 },
   { id: 'week_warrior', name: 'Week Warrior', description: '7-day workout streak', icon: '🔥', requirement: (user) => getStreak(user) >= 7 },
   { id: 'month_master', name: 'Month Master', description: '30-day workout streak', icon: '💪', requirement: (user) => getStreak(user) >= 30 },
-  { id: 'century', name: 'Century Club', description: '100 workouts completed', icon: '💯', requirement: (user) => user.workouts.length >= 100 },
+  { id: 'century', name: 'Century Club', description: '100 workouts completed', icon: '💯', requirement: (user) => user?.workouts?.length >= 100 },
   { id: 'consistent', name: 'Consistency King', description: '4 weeks of 3+ workouts/week', icon: '👑', requirement: (user) => checkConsistency(user, 4, 3) },
   { id: 'volume_10k', name: '10K Club', description: 'Move 10,000 lbs in one workout', icon: '🏋️', requirement: (user) => checkMaxVolume(user, 10000) },
   { id: 'volume_50k', name: '50K Beast', description: 'Move 50,000 lbs in one workout', icon: '🦍', requirement: (user) => checkMaxVolume(user, 50000) },
@@ -17,7 +17,7 @@ const BADGES = [
 ];
 
 function getStreak(user) {
-  if (!user.workouts.length) return 0;
+  if (!user?.workouts?.length) return 0;
   
   const sortedDates = [...new Set(user.workouts.map(w => w.date))].sort().reverse();
   let streak = 0;
@@ -41,7 +41,7 @@ function getStreak(user) {
 }
 
 function checkConsistency(user, weeks, minWorkoutsPerWeek) {
-  if (user.workouts.length < weeks * minWorkoutsPerWeek) return false;
+  if (!user?.workouts?.length || user.workouts.length < weeks * minWorkoutsPerWeek) return false;
   
   const now = new Date();
   const weeksAgo = new Date(now.getTime() - weeks * 7 * 24 * 60 * 60 * 1000);
@@ -65,12 +65,13 @@ function getWeekKey(date) {
 }
 
 function checkMaxVolume(user, targetVolume) {
+  if (!user?.workouts?.length) return false;
   return user.workouts.some(workout => {
-    const volume = workout.exercises.reduce((total, ex) => {
-      return total + ex.sets.reduce((exTotal, set) => {
-        return exTotal + (set.weight * set.reps);
-      }, 0);
-    }, 0);
+    const volume = workout.exercises?.reduce((total, ex) => {
+      return total + (ex.sets?.reduce((exTotal, set) => {
+        return exTotal + ((set.weight || 0) * (set.reps || 0));
+      }, 0) || 0);
+    }, 0) || 0;
     return volume >= targetVolume;
   });
 }
@@ -81,6 +82,7 @@ function countPRs(user) {
 }
 
 function countMorningWorkouts(user) {
+  if (!user?.workouts?.length) return 0;
   return user.workouts.filter(w => {
     const hour = new Date(w.completedAt).getHours();
     return hour >= 5 && hour < 12;
@@ -88,6 +90,7 @@ function countMorningWorkouts(user) {
 }
 
 function countEveningWorkouts(user) {
+  if (!user?.workouts?.length) return 0;
   return user.workouts.filter(w => {
     const hour = new Date(w.completedAt).getHours();
     return hour >= 18 && hour < 24;
@@ -95,14 +98,25 @@ function countEveningWorkouts(user) {
 }
 
 function checkFastestWorkout(user, maxSeconds) {
+  if (!user?.workouts?.length) return false;
   return user.workouts.some(w => w.totalDuration && w.totalDuration <= maxSeconds);
 }
 
 function checkLongestWorkout(user, minSeconds) {
+  if (!user?.workouts?.length) return false;
   return user.workouts.some(w => w.totalDuration && w.totalDuration >= minSeconds);
 }
 
 function Achievements({ user }) {
+  // Safety check: ensure user and workouts exist
+  if (!user || !user.workouts || !Array.isArray(user.workouts)) {
+    return (
+      <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+        <p className="text-gray-400 text-center">No achievement data available.</p>
+      </div>
+    );
+  }
+  
   const earnedBadges = BADGES.filter(badge => badge.requirement(user));
   const lockedBadges = BADGES.filter(badge => !badge.requirement(user));
   const streak = getStreak(user);

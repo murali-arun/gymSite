@@ -5,6 +5,18 @@ function ProgressDashboard({ user }) {
   
   // Calculate stats
   const stats = useMemo(() => {
+    // Safety check: ensure workouts array exists
+    if (!user || !user.workouts || !Array.isArray(user.workouts)) {
+      return {
+        totalWorkouts: 0,
+        totalVolume: 0,
+        avgWorkoutTime: 0,
+        exerciseMap: {},
+        prs: {},
+        uniqueExercises: 0
+      };
+    }
+    
     const totalWorkouts = user.workouts.length;
     const totalVolume = user.workouts.reduce((sum, w) => {
       return sum + w.exercises.reduce((exSum, ex) => {
@@ -64,11 +76,12 @@ function ProgressDashboard({ user }) {
   const last30Days = useMemo(() => {
     const days = [];
     const today = new Date();
+    const workouts = user?.workouts || [];
     for (let i = 29; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      const hasWorkout = user.workouts.some(w => w.date === dateStr);
+      const hasWorkout = workouts.some(w => w.date === dateStr);
       days.push({ date: dateStr, hasWorkout, day: date.getDate() });
     }
     return days;
@@ -141,7 +154,11 @@ function ProgressDashboard({ user }) {
           <p className="text-gray-400 text-center py-8">Complete some workouts to see your PRs!</p>
         ) : (
           <div className="space-y-3">
-            {exercises.slice(0, 5).map(name => (
+            {exercises.slice(0, 5).map(name => {
+              // Safety check: ensure prs entry exists
+              if (!stats.prs[name]) return null;
+              
+              return (
               <div
                 key={name}
                 className="bg-gray-900/50 rounded-lg p-4 hover:bg-gray-900/70 transition-all cursor-pointer"
@@ -154,7 +171,7 @@ function ProgressDashboard({ user }) {
                   </div>
                 </div>
                 
-                {selectedExercise === name && (
+                {selectedExercise === name && stats.exerciseMap[name] && (
                   <div className="mt-3 pt-3 border-t border-gray-700">
                     <div className="text-sm text-gray-400 mb-2">Recent Progress:</div>
                     <div className="space-y-1">
@@ -168,7 +185,8 @@ function ProgressDashboard({ user }) {
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
             
             {exercises.length > 5 && (
               <p className="text-sm text-gray-400 text-center">+ {exercises.length - 5} more exercises</p>
@@ -178,22 +196,22 @@ function ProgressDashboard({ user }) {
       </div>
       
       {/* Volume Over Time */}
-      {user.workouts.length >= 3 && (
+      {user?.workouts?.length >= 3 && (
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
           <h3 className="text-xl font-bold text-white mb-4">📈 Volume Trend</h3>
           <div className="h-48 flex items-end justify-between gap-1">
             {user.workouts.slice(-10).map((workout, idx) => {
-              const volume = workout.exercises.reduce((sum, ex) => {
-                return sum + ex.sets.reduce((exSum, set) => {
-                  return exSum + (set.weight * set.reps);
-                }, 0);
-              }, 0);
+              const volume = workout.exercises?.reduce((sum, ex) => {
+                return sum + (ex.sets?.reduce((exSum, set) => {
+                  return exSum + ((set.weight || 0) * (set.reps || 0));
+                }, 0) || 0);
+              }, 0) || 0;
               
               const maxVolume = Math.max(...user.workouts.slice(-10).map(w => 
-                w.exercises.reduce((sum, ex) => 
-                  sum + ex.sets.reduce((exSum, set) => exSum + (set.weight * set.reps), 0), 0
-                )
-              ));
+                w.exercises?.reduce((sum, ex) => 
+                  sum + (ex.sets?.reduce((exSum, set) => exSum + ((set.weight || 0) * (set.reps || 0)), 0) || 0), 0
+                ) || 1
+              ), 1);
               
               const height = (volume / maxVolume) * 100;
               

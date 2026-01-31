@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 function History({ user, onRefresh }) {
   const [selectedWorkout, setSelectedWorkout] = useState(null);
-  const workouts = user.workouts;
+  const workouts = user?.workouts || [];
 
   if (workouts.length === 0) {
     return (

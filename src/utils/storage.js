@@ -217,6 +217,11 @@ export function getExerciseHistory(user) {
   // Flatten all exercises from all workouts with their performance data
   const exerciseMap = new Map();
   
+  // Safety check: ensure workouts array exists
+  if (!user || !user.workouts || !Array.isArray(user.workouts)) {
+    return [];
+  }
+  
   user.workouts.forEach(workout => {
     workout.exercises?.forEach(exercise => {
       const completedSets = exercise.sets.filter(s => s.completed);
@@ -255,11 +260,23 @@ export function getExerciseHistory(user) {
 }
 
 export function getTodayWorkout(user) {
+  if (!user || !user.workouts || !Array.isArray(user.workouts)) {
+    return null;
+  }
   const today = new Date().toISOString().split('T')[0];
   return user.workouts.find(w => w.date === today);
 }
 
 export function getWeekSummary(user) {
+  // Safety check: ensure workouts array exists
+  if (!user || !user.workouts || !Array.isArray(user.workouts)) {
+    return {
+      workouts: 0,
+      exercises: 0,
+      sets: 0
+    };
+  }
+  
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   
