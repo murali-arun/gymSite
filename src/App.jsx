@@ -6,13 +6,18 @@ import History from './components/History';
 import Progress from './components/Progress';
 import Achievements from './components/Achievements';
 import ProgressDashboard from './components/ProgressDashboard';
+import CoachAvatar from './components/CoachAvatar';
+import CoachSelector from './components/CoachSelector';
+import { CoachProvider } from './contexts/CoachContext';
 import { getUser, getActiveUserId, setActiveUserId } from './utils/storage';
+import { AnimatePresence } from 'framer-motion';
 
-function App() {
+function AppContent() {
   const [activeUserId, setActiveUserIdState] = useState(null);
   const [user, setUser] = useState(null);
   const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard
   const [currentWorkout, setCurrentWorkout] = useState(null);
+  const [showCoachSelector, setShowCoachSelector] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -112,6 +117,13 @@ function App() {
                 📊 Stats
               </button>
               <button
+                onClick={() => setShowCoachSelector(true)}
+                className="px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all"
+                title="Choose Your Coach"
+              >
+                🎯 Coach
+              </button>
+              <button
                 onClick={() => setView('achievements')}
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   view === 'achievements'
@@ -201,7 +213,26 @@ function App() {
           />
         )}
       </main>
+
+      {/* Coach Avatar - Shows motivational messages */}
+      <CoachAvatar />
+
+      {/* Coach Selector Modal */}
+      <AnimatePresence>
+        {showCoachSelector && (
+          <CoachSelector onClose={() => setShowCoachSelector(false)} />
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+// Wrap AppContent with CoachProvider
+function App() {
+  return (
+    <CoachProvider>
+      <AppContent />
+    </CoachProvider>
   );
 }
 

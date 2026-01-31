@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sendWorkoutFeedback, generateProgressSummary } from '../services/api';
 import { saveWorkoutToUser, clearCurrentWorkout, addConversationMessage, shouldSummarize, updateSummary, getUser } from '../utils/storage';
+import { useCoach } from '../contexts/CoachContext';
 
 function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) {
   const [exercises, setExercises] = useState(workout.exercises || []);
   const [completing, setCompleting] = useState(false);
+  const { motivate, celebrate } = useCoach();
   
   // Workout execution state
   const [workoutStarted, setWorkoutStarted] = useState(false);
@@ -96,6 +98,10 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   
   const confirmStartWorkout = () => {
     setShowPreWorkout(false);
+    
+    // Show coach motivation when starting workout!
+    motivate('workoutStart');
+    
     setCountdown(5);
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
@@ -164,8 +170,38 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
   const toggleSetComplete = (exerciseIndex, setIndex) => {
     const updated = [...exercises];
-    updated[exerciseIndex].sets[setIndex].completed = !updated[exerciseIndex].sets[setIndex].completed;
+    const wasCompleted = updated[exerciseIndex].sets[setIndex].completed;
+    updated[exerciseIndex].sets[setIndex].completed = !wasCompleted;
     setExercises(updated);
+    
+    // Motivate on set completion
+    if (!wasCompleted) {
+      // Check if this is a PR (weight increase)
+      const currentWeight = updated[exerciseIndex].sets[setIndex].weight;
+      const exerciseName = updated[exerciseIndex].name;
+      
+      // Simple PR detection - check if this weight is higher than previous workouts
+      const isPotentialPR = user.workouts?.some(w => {
+        const sameExercise = w.exercises?.find(e => e.name === exerciseName);
+        if (sameExercise) {
+          const maxWeight = Math.max(...sameExercise.sets.map(s => s.weight || 0));
+          return currentWeight > maxWeight;
+        }
+        return false;
+      });
+      
+      if (isPotentialPR && currentWeight > 0) {
+        celebrate(`🎉 NEW PR on ${exerciseName}! ${currentWeight}lbs! CRUSHING IT!`, 'pr');
+      } else {
+        motivate('setComplete');
+      }
+      
+      // Check if exercise is complete
+      const allSetsComplete = updated[exerciseIndex].sets.every(s => s.completed);
+      if (allSetsComplete) {
+        setTimeout(() => motivate('exerciseComplete'), 1000);
+      }
+    }
   };
 
   const addSet = (exerciseIndex) => {
@@ -282,6 +318,9 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       // Save to user's history
       await saveWorkoutToUser(user.id, completedWorkout);
       await clearCurrentWorkout(user.id);
+
+      // Celebrate workout completion!
+      motivate('workoutComplete');
 
       // Check if we should summarize progress (every 7 workouts)
       const updatedUser = await getUser(user.id);

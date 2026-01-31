@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { generateWorkout } from '../services/api';
 import { setCurrentWorkout, addConversationMessage } from '../utils/storage';
+import { useCoach } from '../contexts/CoachContext';
 
 function WorkoutGenerator({ user, onWorkoutGenerated }) {
   const [loading, setLoading] = useState(false);
@@ -10,13 +11,14 @@ function WorkoutGenerator({ user, onWorkoutGenerated }) {
     equipment: '',
     notes: ''
   });
+  const { coachType, motivate } = useCoach();
 
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const workout = await generateWorkout(user, preferences);
+      const workout = await generateWorkout(user, preferences, coachType);
       
       // Save to user's current workout
       await setCurrentWorkout(user.id, workout);
@@ -31,6 +33,9 @@ function WorkoutGenerator({ user, onWorkoutGenerated }) {
       }
       await addConversationMessage(user.id, 'user', userMessage);
       await addConversationMessage(user.id, 'assistant', workout.aiResponse);
+      
+      // Show coach motivation
+      motivate('workoutGenerated');
       
       onWorkoutGenerated(workout);
     } catch (err) {

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useCoach } from '../contexts/CoachContext';
 
 const BADGES = [
   { id: 'first_workout', name: 'First Step', description: 'Complete your first workout', icon: '🎯', requirement: (user) => user?.workouts?.length >= 1 },
@@ -108,6 +109,8 @@ function checkLongestWorkout(user, minSeconds) {
 }
 
 function Achievements({ user }) {
+  const { motivate } = useCoach();
+  
   // Safety check: ensure user and workouts exist
   if (!user || !user.workouts || !Array.isArray(user.workouts)) {
     return (
@@ -120,6 +123,13 @@ function Achievements({ user }) {
   const earnedBadges = BADGES.filter(badge => badge.requirement(user));
   const lockedBadges = BADGES.filter(badge => !badge.requirement(user));
   const streak = getStreak(user);
+  
+  // Celebrate streak milestones on mount
+  useEffect(() => {
+    if (streak >= 7 && streak % 7 === 0) {
+      motivate('streak');
+    }
+  }, [streak, motivate]);
   
   return (
     <div className="space-y-6">

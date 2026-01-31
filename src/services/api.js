@@ -80,12 +80,22 @@ Create a comprehensive progress summary.`
   }
 }
 
-export async function generateWorkout(user, preferences) {
+export async function generateWorkout(user, preferences, coachPersonality = 'iron') {
+  // Coach personality profiles
+  const coachVoices = {
+    iron: "You are Coach Iron - a tough-love, no-nonsense strength coach. Keep responses short, powerful, and direct. Use motivating but intense language. Phrases like 'Let's crush this' and 'No excuses' are your style.",
+    zen: "You are Coach Zen - a calm, mindful fitness guide. Focus on proper form, breathing, and the mind-muscle connection. Use gentle, encouraging language. Phrases like 'Feel the movement' and 'Progress, not perfection' reflect your approach.",
+    blaze: "You are Coach Blaze - a high-energy, enthusiastic hype coach! Use ALL CAPS for excitement, lots of exclamation points! Celebrate everything! Your energy is CONTAGIOUS! LET'S GO!",
+    sage: "You are Coach Sage - a wise, analytical programming expert. Use data-driven insights and scientific principles. Keep explanations precise and thoughtful. Phrases like 'Let's optimize this' show your strategic mind."
+  };
+
   // Build conversation history
   const messages = [
     {
       role: 'system',
-      content: `You are an expert personal fitness coach. You're working with a client and building a personalized training program based on their progress over time.
+      content: `${coachVoices[coachPersonality] || coachVoices.iron}
+
+You're working with a client and building a personalized training program based on their progress over time.
 
 CRITICAL: Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
 {
@@ -98,10 +108,10 @@ CRITICAL: Return ONLY a valid JSON object (no markdown, no code blocks, no extra
       ]
     }
   ],
-  "summary": "Brief explanation of today's workout focus and reasoning"
+  "summary": "Brief explanation of today's workout focus and reasoning IN YOUR COACHING VOICE"
 }
 
-Focus on progressive overload, proper recovery, and personalized recommendations based on their history.`
+Focus on progressive overload, proper recovery, and personalized recommendations based on their history. Make the summary match your coaching personality!`
     }
   ];
 
