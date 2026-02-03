@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useCoach } from '../../../contexts/CoachContext';
 
 const BADGES = [
