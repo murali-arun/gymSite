@@ -94,17 +94,28 @@ function AppContent() {
       // Save the manual workout
       await addWorkout(activeUserId, workout);
       
-      // Add detailed conversation history
-      const workoutDetails = workout.exercises.map(e => {
-        const totalSets = e.sets.length;
-        const exampleSet = e.sets[0];
-        return `${e.name}: ${totalSets} sets of ${exampleSet.reps} reps @ ${exampleSet.weight}lbs`;
-      }).join(', ');
+      // Add detailed conversation history based on workout type
+      let workoutDetails;
+      if (workout.type === 'cardio') {
+        const cardio = workout.cardio;
+        const pace = cardio.distance && cardio.duration 
+          ? ` (${(parseFloat(cardio.duration) / parseFloat(cardio.distance)).toFixed(1)} min/mile)`
+          : '';
+        workoutDetails = `${cardio.activity}: ${cardio.duration} minutes${
+          cardio.distance ? `, ${cardio.distance} miles${pace}` : ''
+        }, ${cardio.intensity} intensity${cardio.notes ? ` - ${cardio.notes}` : ''}`;
+      } else {
+        workoutDetails = workout.exercises.map(e => {
+          const totalSets = e.sets.length;
+          const exampleSet = e.sets[0];
+          return `${e.name}: ${totalSets} sets of ${exampleSet.reps} reps @ ${exampleSet.weight}lbs`;
+        }).join(', ');
+      }
       
       await addConversationMessage(
         activeUserId,
         'user',
-        `Manual workout logged for ${new Date(workout.date).toLocaleDateString()}${workout.description ? ` - ${workout.description}` : ''}: ${workoutDetails}`
+        `Manual ${workout.type || 'strength'} workout logged for ${new Date(workout.date).toLocaleDateString()}${workout.description ? ` - ${workout.description}` : ''}: ${workoutDetails}`
       );
       
       await addConversationMessage(

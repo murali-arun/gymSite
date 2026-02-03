@@ -55,8 +55,18 @@ function History({ user, onRefresh }) {
                     )}
                   </div>
                   <div className="text-sm text-gray-400">
-                    {workout.exercises?.length || 0} exercises • {' '}
-                    {workout.exercises?.reduce((sum, ex) => sum + ex.sets.length, 0) || 0} total sets
+                    {workout.type === 'cardio' ? (
+                      <>
+                        {workout.cardio.activity} • {workout.cardio.duration} min
+                        {workout.cardio.distance && ` • ${workout.cardio.distance} miles`}
+                        {' • '}{workout.cardio.intensity} intensity
+                      </>
+                    ) : (
+                      <>
+                        {workout.exercises?.length || 0} exercises • {' '}
+                        {workout.exercises?.reduce((sum, ex) => sum + ex.sets.length, 0) || 0} total sets
+                      </>
+                    )}
                   </div>
                   {workout.description && (
                     <div className="text-sm text-gray-500 mt-1 italic">
@@ -83,6 +93,42 @@ function History({ user, onRefresh }) {
                     <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
                       <h4 className="text-sm font-semibold text-blue-400 mb-2">🤖 AI Feedback</h4>
                       <p className="text-sm text-gray-300 whitespace-pre-wrap">{workout.aiFeedback}</p>
+                    </div>
+                  )}
+
+                  {/* Cardio Details */}
+                  {workout.type === 'cardio' && workout.cardio && (
+                    <div className="bg-gray-600/30 rounded-lg p-4">
+                      <h4 className="font-semibold text-white mb-3">🏃 {workout.cardio.activity}</h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="bg-gray-700/50 rounded px-3 py-2">
+                          <span className="text-gray-400">Duration:</span>
+                          <span className="text-gray-300 ml-2 font-semibold">{workout.cardio.duration} min</span>
+                        </div>
+                        {workout.cardio.distance && (
+                          <div className="bg-gray-700/50 rounded px-3 py-2">
+                            <span className="text-gray-400">Distance:</span>
+                            <span className="text-gray-300 ml-2 font-semibold">{workout.cardio.distance} miles</span>
+                          </div>
+                        )}
+                        <div className="bg-gray-700/50 rounded px-3 py-2">
+                          <span className="text-gray-400">Intensity:</span>
+                          <span className="text-gray-300 ml-2 font-semibold capitalize">{workout.cardio.intensity}</span>
+                        </div>
+                        {workout.cardio.distance && workout.cardio.duration && (
+                          <div className="bg-gray-700/50 rounded px-3 py-2">
+                            <span className="text-gray-400">Pace:</span>
+                            <span className="text-gray-300 ml-2 font-semibold">
+                              {(parseFloat(workout.cardio.duration) / parseFloat(workout.cardio.distance)).toFixed(1)} min/mile
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {workout.cardio.notes && (
+                        <div className="mt-3 text-sm text-gray-400 italic">
+                          Notes: {workout.cardio.notes}
+                        </div>
+                      )}
                     </div>
                   )}
 

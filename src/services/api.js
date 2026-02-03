@@ -221,24 +221,47 @@ Focus on progressive overload, proper recovery, and personalized recommendations
 }
 
 export async function sendWorkoutFeedback(user, completedWorkout) {
-  const workoutSummary = {
-    date: completedWorkout.date,
-    exercises: completedWorkout.exercises.map(e => ({
-      name: e.name,
-      completedSets: e.sets.filter(s => s.completed).length,
-      totalSets: e.sets.length,
-      sets: e.sets.filter(s => s.completed).map(s => ({
-        weight: s.weight,
-        reps: s.reps
+  let workoutSummary;
+  
+  if (completedWorkout.type === 'cardio') {
+    // Cardio workout summary
+    const cardio = completedWorkout.cardio;
+    workoutSummary = {
+      date: completedWorkout.date,
+      type: 'cardio',
+      cardio: {
+        activity: cardio.activity,
+        duration: `${cardio.duration} minutes`,
+        distance: cardio.distance ? `${cardio.distance} miles` : 'N/A',
+        intensity: cardio.intensity,
+        notes: cardio.notes || 'None',
+        pace: cardio.distance && cardio.duration 
+          ? `${(parseFloat(cardio.duration) / parseFloat(cardio.distance)).toFixed(1)} min/mile`
+          : 'N/A'
+      }
+    };
+  } else {
+    // Strength workout summary
+    workoutSummary = {
+      date: completedWorkout.date,
+      type: 'strength',
+      exercises: completedWorkout.exercises.map(e => ({
+        name: e.name,
+        completedSets: e.sets.filter(s => s.completed).length,
+        totalSets: e.sets.length,
+        sets: e.sets.filter(s => s.completed).map(s => ({
+          weight: s.weight,
+          reps: s.reps
+        }))
       }))
-    }))
-  };
+    };
+  }
 
   // Build messages with conversation history
   const messages = [
     {
       role: 'system',
-      content: 'You are an expert personal fitness coach analyzing your client\'s workout performance. Provide brief, motivating feedback (2-3 sentences) and note any important observations for future planning.'
+      content: 'You are an expert personal fitness coach analyzing your client\'s workout performance. Provide brief, motivating feedback (2-3 sentences) and note any important observations for future planning. Consider how this workout (strength or cardio) fits into their overall training program.'
     }
   ];
 

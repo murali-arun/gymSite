@@ -2,10 +2,18 @@ import React, { useState } from 'react';
 import { useCoach } from '../contexts/CoachContext';
 
 function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
+  const [workoutType, setWorkoutType] = useState('strength'); // 'strength' or 'cardio'
   const [workoutDetails, setWorkoutDetails] = useState({
     date: new Date().toISOString().split('T')[0],
     description: '',
-    exercises: [{ name: '', sets: '', reps: '', weight: '' }]
+    exercises: [{ name: '', sets: '', reps: '', weight: '' }],
+    cardio: {
+      activity: '',
+      duration: '',
+      distance: '',
+      intensity: 'moderate',
+      notes: ''
+    }
   });
   const [loading, setLoading] = useState(false);
   const { motivate } = useCoach();
@@ -33,28 +41,53 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
     setLoading(true);
 
     try {
-      // Filter out empty exercises
-      const validExercises = workoutDetails.exercises
-        .filter(ex => ex.name.trim() !== '')
-        .map(ex => ({
-          name: ex.name,
-          sets: Array.from({ length: parseInt(ex.sets) || 1 }, (_, i) => ({
-            weight: ex.weight || '0',
-            reps: ex.reps || '0',
-            completed: true,
-            setNumber: i + 1
-          }))
-        }));
+      let workout;
+      
+      if (workoutType === 'cardio') {
+        // Cardio workout
+        const cardioData = workoutDetails.cardio;
+        workout = {
+          id: Date.now(),
+          date: workoutDetails.date,
+          type: 'cardio',
+          cardio: {
+            activity: cardioData.activity,
+            duration: cardioData.duration,
+            distance: cardioData.distance,
+            intensity: cardioData.intensity,
+            notes: cardioData.notes
+          },
+          exercises: [], // Empty for cardio
+          aiSuggestion: `Manual cardio log: ${cardioData.activity}`,
+          isManualLog: true,
+          description: workoutDetails.description,
+          completedAt: new Date().toISOString()
+        };
+      } else {
+        // Strength workout
+        const validExercises = workoutDetails.exercises
+          .filter(ex => ex.name.trim() !== '')
+          .map(ex => ({
+            name: ex.name,
+            sets: Array.from({ length: parseInt(ex.sets) || 1 }, (_, i) => ({
+              weight: ex.weight || '0',
+              reps: ex.reps || '0',
+              completed: true,
+              setNumber: i + 1
+            }))
+          }));
 
-      const workout = {
-        id: Date.now(),
-        date: workoutDetails.date,
-        exercises: validExercises,
-        aiSuggestion: `Manual workout log: ${workoutDetails.description || 'Workout logged manually'}`,
-        isManualLog: true,
-        description: workoutDetails.description,
-        completedAt: new Date().toISOString()
-      };
+        workout = {
+          id: Date.now(),
+          date: workoutDetails.date,
+          type: 'strength',
+          exercises: validExercises,
+          aiSuggestion: `Manual workout log: ${workoutDetails.description || 'Workout logged manually'}`,
+          isManualLog: true,
+          description: workoutDetails.description,
+          completedAt: new Date().toISOString()
+        };
+      }
 
       motivate('workoutCompleted');
       await onWorkoutLogged(workout);
@@ -86,6 +119,36 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
+              Workout Type
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setWorkoutType('strength')}
+                className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                  workoutType === 'strength'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                💪 Strength Training
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkoutType('cardio')}
+                className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                  workoutType === 'cardio'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                🏃 Cardio
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Workout Date
             </label>
             <input
@@ -111,7 +174,110 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
             />
           </div>
 
-          <div className="space-y-4">
+          {workoutType === 'cardio' ? (
+            // Cardio Form
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Activity Type
+                </label>
+                <select
+                  value={workoutDetails.cardio.activity}
+                  onChange={(e) => setWorkoutDetails({
+                    ...workoutDetails,
+                    cardio: { ...workoutDetails.cardio, activity: e.target.value }
+                  })}
+                  required
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select activity...</option>
+                  <option value="Running">🏃 Running</option>
+                  <option value="Walking">🚶 Walking</option>
+                  <option value="Swimming">🏊 Swimming</option>
+                  <option value="Cycling">🚴 Cycling</option>
+                  <option value="Rowing">🚣 Rowing</option>
+                  <option value="Elliptical">⚡ Elliptical</option>
+                  <option value="Stair Climbing">🪜 Stair Climbing</option>
+                  <option value="Jump Rope">🪢 Jump Rope</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Duration (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="30"
+                    value={workoutDetails.cardio.duration}
+                    onChange={(e) => setWorkoutDetails({
+                      ...workoutDetails,
+                      cardio: { ...workoutDetails.cardio, duration: e.target.value }
+                    })}
+                    min="1"
+                    required
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Distance (miles, optional)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="3.5"
+                    value={workoutDetails.cardio.distance}
+                    onChange={(e) => setWorkoutDetails({
+                      ...workoutDetails,
+                      cardio: { ...workoutDetails.cardio, distance: e.target.value }
+                    })}
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Intensity Level
+                </label>
+                <select
+                  value={workoutDetails.cardio.intensity}
+                  onChange={(e) => setWorkoutDetails({
+                    ...workoutDetails,
+                    cardio: { ...workoutDetails.cardio, intensity: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="light">Light - Easy pace, can talk easily</option>
+                  <option value="moderate">Moderate - Steady pace, can hold conversation</option>
+                  <option value="vigorous">Vigorous - Challenging pace, breathing hard</option>
+                  <option value="intense">Intense - Maximum effort, HIIT/sprints</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Additional Notes (optional)
+                </label>
+                <textarea
+                  placeholder="e.g., felt great, good pace, hills included"
+                  value={workoutDetails.cardio.notes}
+                  onChange={(e) => setWorkoutDetails({
+                    ...workoutDetails,
+                    cardio: { ...workoutDetails.cardio, notes: e.target.value }
+                  })}
+                  rows={2}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+            </div>
+          ) : (
+            // Strength Training Form
+            <div className="space-y-4">
             <div className="flex justify-between items-center">
               <label className="block text-sm font-medium text-gray-300">
                 Exercises
@@ -186,6 +352,7 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
               </div>
             ))}
           </div>
+          )}
 
           <div className="flex gap-4">
             <button
