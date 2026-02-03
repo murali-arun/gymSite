@@ -48,11 +48,21 @@ function History({ user, onRefresh }) {
                     <span className="text-xs px-2 py-1 bg-green-900/50 text-green-400 rounded">
                       Completed
                     </span>
+                    {workout.isManualLog && (
+                      <span className="text-xs px-2 py-1 bg-purple-900/50 text-purple-400 rounded flex items-center gap-1">
+                        📝 Manual Log
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-400">
                     {workout.exercises?.length || 0} exercises • {' '}
                     {workout.exercises?.reduce((sum, ex) => sum + ex.sets.length, 0) || 0} total sets
                   </div>
+                  {workout.description && (
+                    <div className="text-sm text-gray-500 mt-1 italic">
+                      {workout.description}
+                    </div>
+                  )}
                 </div>
                 <svg
                   className={`w-5 h-5 text-gray-400 transition-transform ${

@@ -133,6 +133,22 @@ export async function saveWorkoutToUser(userId, workout) {
   }
 }
 
+export async function addWorkout(userId, workout) {
+  try {
+    const user = await getUser(userId);
+    if (!user) throw new Error('User not found');
+    
+    user.workouts.unshift(workout);
+    
+    await updateUser(userId, { 
+      workouts: user.workouts
+    });
+  } catch (error) {
+    console.error('Error adding workout:', error);
+    throw error;
+  }
+}
+
 export async function setCurrentWorkout(userId, workout) {
   try {
     await updateUser(userId, { currentWorkout: workout });

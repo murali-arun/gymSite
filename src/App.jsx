@@ -8,14 +8,15 @@ import Achievements from './components/Achievements';
 import ProgressDashboard from './components/ProgressDashboard';
 import CoachAvatar from './components/CoachAvatar';
 import CoachSelector from './components/CoachSelector';
+import ManualWorkoutLog from './components/ManualWorkoutLog';
 import { CoachProvider } from './contexts/CoachContext';
-import { getUser, getActiveUserId, setActiveUserId } from './utils/storage';
+import { getUser, getActiveUserId, setActiveUserId, addWorkout, addConversationMessage } from './utils/storage';
 import { AnimatePresence } from 'framer-motion';
 
 function AppContent() {
   const [activeUserId, setActiveUserIdState] = useState(null);
   const [user, setUser] = useState(null);
-  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard
+  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const [showCoachSelector, setShowCoachSelector] = useState(false);
 
@@ -79,6 +80,48 @@ function AppContent() {
   const refreshUserData = async () => {
     const updatedUser = await getUser(activeUserId);
     setUser(updatedUser);
+  };
+
+  const handleManualWorkoutLogged = async (workout) => {
+    try {
+      // Get AI feedback for the manual workout
+      const { sendWorkoutFeedback } = await import('./services/api');
+      const feedback = await sendWorkoutFeedback(user, workout);
+      
+      // Add feedback to the workout
+      workout.aiFeedback = feedback;
+      
+      // Save the manual workout
+      await addWorkout(activeUserId, workout);
+      
+      // Add detailed conversation history
+      const workoutDetails = workout.exercises.map(e => {
+        const totalSets = e.sets.length;
+        const exampleSet = e.sets[0];
+        return `${e.name}: ${totalSets} sets of ${exampleSet.reps} reps @ ${exampleSet.weight}lbs`;
+      }).join(', ');
+      
+      await addConversationMessage(
+        activeUserId,
+        'user',
+        `Manual workout logged for ${new Date(workout.date).toLocaleDateString()}${workout.description ? ` - ${workout.description}` : ''}: ${workoutDetails}`
+      );
+      
+      await addConversationMessage(
+        activeUserId,
+        'assistant',
+        feedback
+      );
+      
+      // Refresh user data and return to home
+      await refreshUserData();
+      setView('home');
+      
+      alert('✓ Workout logged successfully with AI feedback!');
+    } catch (error) {
+      console.error('Error saving manual workout:', error);
+      alert('Failed to save workout. Please try again.');
+    }
   };
 
   if (!user) {
@@ -167,9 +210,35 @@ function AppContent() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         {view === 'home' && (
-          <WorkoutGenerator
+          <>
+            <WorkoutGenerator
+              user={user}
+              onWorkoutGenerated={handleWorkoutGenerated}
+            />
+            
+            {/* Manual Workout Log Button */}
+            <div className="mt-6">
+              <button
+                onClick={() => setView('manualLog')}
+                className="w-full px-6 py-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-all border-2 border-gray-600 hover:border-gray-500"
+              >
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-2xl">📝</span>
+                  <div className="text-left">
+                    <div>Log External Workout</div>
+                    <div className="text-sm text-gray-400 font-normal">Track workouts you did outside the app</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </>
+        )}
+        
+        {view === 'manualLog' && (
+          <ManualWorkoutLog
             user={user}
-            onWorkoutGenerated={handleWorkoutGenerated}
+            onWorkoutLogged={handleManualWorkoutLogged}
+            onCancel={() => setView('home')}
           />
         )}
         
