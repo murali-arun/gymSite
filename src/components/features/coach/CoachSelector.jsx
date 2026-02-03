@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useCoach } from '../contexts/CoachContext';
+import { useCoach } from '../../../contexts/CoachContext';
 
 export default function CoachSelector({ onClose }) {
   const { coachType, setCoachType, availableCoaches } = useCoach();
