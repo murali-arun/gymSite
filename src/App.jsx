@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import UserSelection from './components/UserSelection';
-import WorkoutGenerator from './components/WorkoutGenerator';
-import ExerciseTracker from './components/ExerciseTracker';
-import History from './components/History';
-import Progress from './components/Progress';
-import Achievements from './components/Achievements';
-import ProgressDashboard from './components/ProgressDashboard';
-import CoachAvatar from './components/CoachAvatar';
-import CoachSelector from './components/CoachSelector';
-import ManualWorkoutLog from './components/ManualWorkoutLog';
+import { UserSelection } from './components/features/user';
+import { WorkoutGenerator, ExerciseTracker, History, ManualWorkoutLog } from './components/features/workout';
+import { Progress, ProgressDashboard, Achievements } from './components/features/progress';
+import { CoachAvatar, CoachSelector } from './components/features/coach';
 import { CoachProvider } from './contexts/CoachContext';
 import { getUser, getActiveUserId, setActiveUserId, addWorkout, addConversationMessage } from './utils/storage';
 import { AnimatePresence } from 'framer-motion';

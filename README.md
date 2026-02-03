@@ -1,24 +1,36 @@
-# base-template-arun
+# AI Gym Tracker 💪🤖
 
 🔗 **Repository**: [github.com/murali-arun/base-template-site](https://github.com/murali-arun/base-template-site)
 
-A clean, ready-to-use web application template built with Vite. Perfect for quickly starting new projects with modern development tools and deployment configurations.
+An intelligent workout tracking app with AI-powered workout generation, real-time exercise tracking, and personalized coaching. Built with React, Vite, and integrated with LLM for smart programming.
 
-## ✨ Features
+## ✨ Key Features
 
-- ⚡ **Vite** - Fast development server with hot module replacement
-- 📦 **Modern Build** - Optimized production builds with automatic code splitting
-- 🚀 **Deployment Ready** - Includes nginx configuration and GitHub Actions workflow
-- 🎨 **Clean Structure** - Simple, organized project structure to build upon
-- 🔧 **Easy Configuration** - Pre-configured with sensible defaults
+- 🤖 **AI Workout Generation** - Personalized workouts based on your history and goals
+- 💪 **Live Exercise Tracking** - Track sets, reps, and weights in real-time
+- 📝 **Manual Workout Logging** - Log external workouts (gym, cardio, swimming, etc.)
+- 📊 **Progress Analytics** - Visualize strength gains and workout trends
+- 🎯 **AI Coach Personalities** - Choose from Iron, Zen, Blaze, or Sage coaches
+- 🏆 **Achievement System** - Unlock badges as you progress
+- 💾 **Persistent Storage** - Backend API with user data management
+- 🎨 **Modern UI** - Dark theme with Tailwind CSS and Framer Motion
 
-## 📦 What's Included
+## 🏗️ Component Architecture
 
-- **Vite Dev Server** - Lightning-fast development experience
-- **Build Scripts** - Production-ready build configuration
-- **nginx Config** - Example nginx configuration for deployment
-- **GitHub Actions** - Automated deployment workflow (optional)
-- **Basic Styling** - Starter CSS for quick customization
+This project uses **Atomic Design** principles for scalable, maintainable code:
+
+```
+src/components/
+├── atoms/          → Buttons, Inputs, Cards, Badges (reusable primitives)
+├── molecules/      → FormField, WorkoutCard, EmptyState (compositions)
+└── features/       → User, Workout, Progress, Coach (domain modules)
+```
+
+📚 **New to the codebase?** Start here:
+- [QUICKSTART.md](./QUICKSTART.md) - Quick developer reference
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Detailed architecture guide  
+- [COMPONENT_MAP.md](./COMPONENT_MAP.md) - Component relationships
+- [STRUCTURE.md](./STRUCTURE.md) - Visual structure diagram
 
 ## 🚀 Quick Start
 
