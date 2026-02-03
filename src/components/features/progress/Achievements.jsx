@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useCoach } from '../contexts/CoachContext';
+import { useCoach } from '../../../contexts/CoachContext';
 
 const BADGES = [
   { id: 'first_workout', name: 'First Step', description: 'Complete your first workout', icon: '🎯', requirement: (user) => user?.workouts?.length >= 1 },

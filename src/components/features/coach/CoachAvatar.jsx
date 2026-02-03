@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCoach } from '../contexts/CoachContext';
+import { useCoach } from '../../../contexts/CoachContext';
 
 export default function CoachAvatar() {
   const { coach, showCoach, coachMessage, messageType } = useCoach();

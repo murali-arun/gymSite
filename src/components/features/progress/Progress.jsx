@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getExerciseHistory, getTodayWorkout, getWeekSummary } from '../utils/storage';
+import { getExerciseHistory, getTodayWorkout, getWeekSummary } from '../../../utils/storage';
 
 function Progress({ user, onRefresh }) {
   const [selectedExercise, setSelectedExercise] = useState(null);

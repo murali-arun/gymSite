@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { sendWorkoutFeedback, generateProgressSummary } from '../services/api';
-import { saveWorkoutToUser, clearCurrentWorkout, addConversationMessage, shouldSummarize, updateSummary, getUser } from '../utils/storage';
-import { useCoach } from '../contexts/CoachContext';
+import { sendWorkoutFeedback, generateProgressSummary } from '../../../services/api';
+import { saveWorkoutToUser, clearCurrentWorkout, addConversationMessage, shouldSummarize, updateSummary, getUser } from '../../../utils/storage';
+import { useCoach } from '../../../contexts/CoachContext';
 
 function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) {
   const [exercises, setExercises] = useState(workout.exercises || []);

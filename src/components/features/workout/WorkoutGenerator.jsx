@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { generateWorkout } from '../services/api';
-import { setCurrentWorkout, addConversationMessage } from '../utils/storage';
-import { useCoach } from '../contexts/CoachContext';
+import { generateWorkout } from '../../../services/api';
+import { setCurrentWorkout, addConversationMessage } from '../../../utils/storage';
+import { useCoach } from '../../../contexts/CoachContext';
 
 function WorkoutGenerator({ user, onWorkoutGenerated }) {
   const [loading, setLoading] = useState(false);

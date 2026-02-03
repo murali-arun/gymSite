@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCoach } from '../contexts/CoachContext';
+import { useCoach } from '../../../contexts/CoachContext';
 
 function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
   const [workoutType, setWorkoutType] = useState('strength'); // 'strength' or 'cardio'
