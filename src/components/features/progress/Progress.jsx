@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { getExerciseHistory, getTodayWorkout, getWeekSummary } from '../../../utils/storage';
 
-function Progress({ user, onRefresh }) {
+const Progress = memo(function Progress({ user, onRefresh }) {
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [timeRange, setTimeRange] = useState(30); // days
   
-  const exerciseHistory = getExerciseHistory(user);
-  const todayWorkout = getTodayWorkout(user);
-  const weekStats = getWeekSummary(user);
+  // Memoize expensive calculations
+  const exerciseHistory = useMemo(() => getExerciseHistory(user), [user?.workouts]);
+  const todayWorkout = useMemo(() => getTodayWorkout(user), [user?.workouts]);
+  const weekStats = useMemo(() => getWeekSummary(user), [user?.workouts]);
 
-  // Get calendar data for last N days
-  const getCalendarData = () => {
+  // Get calendar data for last N days - memoize to avoid recalculation
+  const getCalendarData = useMemo(() => {
     const days = [];
     const today = new Date();
     const workouts = user?.workouts || [];
@@ -33,10 +34,10 @@ function Progress({ user, onRefresh }) {
     }
     
     return days;
-  };
+  }, [user?.workouts, timeRange]);
 
-  const calendarData = getCalendarData();
-  const workoutDays = calendarData.filter(d => d.workout).length;
+  const calendarData = getCalendarData;
+  const workoutDays = useMemo(() => calendarData.filter(d => d.workout).length, [calendarData]);
   const consistency = Math.round((workoutDays / timeRange) * 100);
 
   const renderExerciseChart = (exercise) => {
@@ -320,6 +321,6 @@ function Progress({ user, onRefresh }) {
       </div>
     </div>
   );
-}
+});
 
 export default Progress;

@@ -1,38 +1,18 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { useCoach } from '../../../contexts/CoachContext';
+import { Modal, ModalHeader, ModalBody } from '../../organisms';
+import { InfoBox, Grid } from '../../organisms';
 
-export default function CoachSelector({ onClose }) {
+const CoachSelector = memo(function CoachSelector({ onClose }) {
   const { coachType, setCoachType, availableCoaches } = useCoach();
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="bg-gray-800/95 backdrop-blur-xl rounded-2xl p-6 max-w-2xl w-full border border-gray-700 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">Choose Your Coach</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <Modal isOpen={true} onClose={onClose} size="lg">
+      <ModalHeader title="Choose Your Coach" onClose={onClose} icon="🎯" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <ModalBody>
+        <Grid cols={2} gap="md">
           {Object.entries(availableCoaches).map(([key, coach]) => (
             <motion.button
               key={key}
@@ -76,16 +56,15 @@ export default function CoachSelector({ onClose }) {
               )}
             </motion.button>
           ))}
-        </div>
+        </Grid>
 
-        <div className="mt-6 p-4 bg-gray-700/50 rounded-xl border border-gray-600">
-          <div className="text-xs text-gray-400 mb-2">💡 Tip</div>
-          <div className="text-sm text-gray-300">
-            Your coach will adapt their motivational style and AI responses to match their personality. 
-            Change anytime from settings!
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
+        <InfoBox variant="neutral" icon="💡" title="Tip" className="mt-6">
+          Your coach will adapt their motivational style and AI responses to match their personality. 
+          Change anytime from settings!
+        </InfoBox>
+      </ModalBody>
+    </Modal>
   );
-}
+});
+
+export default CoachSelector;

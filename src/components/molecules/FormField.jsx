@@ -8,18 +8,21 @@ export function FormField({
   onChange, 
   placeholder,
   required = false,
+  multiline = false,
+  rows = 3,
   children,
   ...props 
 }) {
   return (
     <div>
       <Label required={required}>{label}</Label>
-      {type === 'textarea' ? (
+      {multiline || type === 'textarea' ? (
         <TextArea
           value={value}
           onChange={onChange}
           placeholder={placeholder}
           required={required}
+          rows={rows}
           {...props}
         />
       ) : type === 'select' ? (

@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCoach } from '../../../contexts/CoachContext';
 
-export default function CoachAvatar() {
+const CoachAvatar = memo(function CoachAvatar() {
   const { coach, showCoach, coachMessage, messageType } = useCoach();
 
   const messageColors = {
@@ -70,4 +70,6 @@ export default function CoachAvatar() {
       )}
     </AnimatePresence>
   );
-}
+});
+
+export default CoachAvatar;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 
 const CoachContext = createContext();
@@ -205,7 +205,7 @@ export function CoachProvider({ children }) {
     fireConfetti(confettiType);
   }, [showMessage, fireConfetti]);
 
-  const value = {
+  const value = useMemo(() => ({
     coach,
     coachType,
     setCoachType,
@@ -217,7 +217,7 @@ export function CoachProvider({ children }) {
     showMessage,
     fireConfetti,
     availableCoaches: COACH_PROFILES
-  };
+  }), [coach, coachType, showCoach, coachMessage, messageType, motivate, celebrate, showMessage, fireConfetti]);
 
   return (
     <CoachContext.Provider value={value}>

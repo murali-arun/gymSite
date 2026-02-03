@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback } from 'react';
 import { generateWorkout } from '../../../services/api';
 import { setCurrentWorkout, addConversationMessage } from '../../../utils/storage';
 import { useCoach } from '../../../contexts/CoachContext';
+import { Container, Section, InfoBox, Grid, Stack } from '../../organisms';
+import { FormField } from '../../molecules';
+import { Button } from '../../atoms';
 
-function WorkoutGenerator({ user, onWorkoutGenerated }) {
+const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerated }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [preferences, setPreferences] = useState({
@@ -13,7 +16,7 @@ function WorkoutGenerator({ user, onWorkoutGenerated }) {
   });
   const { coachType, motivate } = useCoach();
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -43,66 +46,55 @@ function WorkoutGenerator({ user, onWorkoutGenerated }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, preferences, coachType, motivate, onWorkoutGenerated]);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
-        <h2 className="text-3xl font-bold text-white mb-2">Ready to Train?</h2>
-        <p className="text-gray-400 mb-6">Let AI suggest your workout for today</p>
+    <Stack spacing="lg">
+      <Container variant="default" padding="lg">
+        <Section 
+          title="Ready to Train?" 
+          description="Let AI suggest your workout for today"
+          icon="🏋️"
+        />
 
-        <div className="space-y-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Focus Area (optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., chest, legs, back, full body"
-              value={preferences.focus}
-              onChange={(e) => setPreferences({ ...preferences, focus: e.target.value })}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+        <Stack spacing="md" className="mt-6">
+          <FormField
+            label="Focus Area (optional)"
+            placeholder="e.g., chest, legs, back, full body"
+            value={preferences.focus}
+            onChange={(e) => setPreferences({ ...preferences, focus: e.target.value })}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Available Equipment (optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., dumbbells, barbell, machines"
-              value={preferences.equipment}
-              onChange={(e) => setPreferences({ ...preferences, equipment: e.target.value })}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <FormField
+            label="Available Equipment (optional)"
+            placeholder="e.g., dumbbells, barbell, machines"
+            value={preferences.equipment}
+            onChange={(e) => setPreferences({ ...preferences, equipment: e.target.value })}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Additional Notes (optional)
-            </label>
-            <textarea
-              placeholder="e.g., feeling tired, want intense workout"
-              value={preferences.notes}
-              onChange={(e) => setPreferences({ ...preferences, notes: e.target.value })}
-              rows={3}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
-          </div>
-        </div>
+          <FormField
+            label="Additional Notes (optional)"
+            placeholder="e.g., feeling tired, want intense workout"
+            value={preferences.notes}
+            onChange={(e) => setPreferences({ ...preferences, notes: e.target.value })}
+            multiline
+            rows={3}
+          />
+        </Stack>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
+          <InfoBox variant="error" className="mt-4">
             {error}
-          </div>
+          </InfoBox>
         )}
 
-        <div className="flex gap-3">
-          <button
+        <div className="mt-6">
+          <Button
             onClick={handleGenerate}
             disabled={loading}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/50"
+            variant="primary"
+            fullWidth
+            size="lg"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -115,15 +107,15 @@ function WorkoutGenerator({ user, onWorkoutGenerated }) {
             ) : (
               '🎯 Generate Today\'s Workout'
             )}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Container>
 
       {/* Stats Card */}
       {user.workouts.length > 0 && (
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+        <Container variant="default" padding="md">
           <h3 className="text-lg font-semibold text-white mb-4">Your Progress</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <Grid cols={2} gap="md">
             <div className="bg-gray-700/50 rounded-lg p-4">
               <div className="text-3xl font-bold text-blue-400">{user.workouts.length}</div>
               <div className="text-sm text-gray-400">Total Workouts</div>
@@ -134,11 +126,11 @@ function WorkoutGenerator({ user, onWorkoutGenerated }) {
               </div>
               <div className="text-sm text-gray-400">Today's Status</div>
             </div>
-          </div>
-        </div>
+          </Grid>
+        </Container>
       )}
-    </div>
+    </Stack>
   );
-}
+});
 
 export default WorkoutGenerator;

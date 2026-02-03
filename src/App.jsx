@@ -1,11 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { UserSelection } from './components/features/user';
-import { WorkoutGenerator, ExerciseTracker, History, ManualWorkoutLog } from './components/features/workout';
-import { Progress, ProgressDashboard, Achievements } from './components/features/progress';
 import { CoachAvatar, CoachSelector } from './components/features/coach';
 import { CoachProvider } from './contexts/CoachContext';
 import { getUser, getActiveUserId, setActiveUserId, addWorkout, addConversationMessage } from './utils/storage';
 import { AnimatePresence } from 'framer-motion';
+
+// Lazy load heavy components for better initial load performance
+const WorkoutGenerator = lazy(() => import('./components/features/workout/WorkoutGenerator'));
+const ExerciseTracker = lazy(() => import('./components/features/workout/ExerciseTracker'));
+const History = lazy(() => import('./components/features/workout/History'));
+const ManualWorkoutLog = lazy(() => import('./components/features/workout/ManualWorkoutLog'));
+const Progress = lazy(() => import('./components/features/progress/Progress'));
+const ProgressDashboard = lazy(() => import('./components/features/progress/ProgressDashboard'));
+const Achievements = lazy(() => import('./components/features/progress/Achievements'));
+
+// Loading component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center p-12">
+    <div className="text-center">
+      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+      <p className="text-gray-400">Loading...</p>
+    </div>
+  </div>
+);
 
 function AppContent() {
   const [activeUserId, setActiveUserIdState] = useState(null);
@@ -33,7 +50,7 @@ function AppContent() {
     loadUser();
   }, []);
 
-  const handleUserSelected = async (userId) => {
+  const handleUserSelected = useCallback(async (userId) => {
     const userData = await getUser(userId);
     await setActiveUserId(userId);
     setActiveUserIdState(userId);
@@ -43,40 +60,40 @@ function AppContent() {
       setCurrentWorkout(userData.currentWorkout);
       setView('tracker');
     }
-  };
+  }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await setActiveUserId('');
     setActiveUserIdState(null);
     setUser(null);
     setCurrentWorkout(null);
     setView('home');
-  };
+  }, []);
 
-  const handleWorkoutGenerated = (workout) => {
+  const handleWorkoutGenerated = useCallback((workout) => {
     setCurrentWorkout(workout);
     setView('tracker');
-  };
+  }, []);
 
-  const handleRegenerateWorkout = () => {
+  const handleRegenerateWorkout = useCallback(() => {
     setCurrentWorkout(null);
     setView('home');
-  };
+  }, []);
 
-  const handleWorkoutComplete = async () => {
+  const handleWorkoutComplete = useCallback(async () => {
     // Refresh user data
     const updatedUser = await getUser(activeUserId);
     setUser(updatedUser);
     setCurrentWorkout(null);
     setView('home');
-  };
+  }, [activeUserId]);
 
-  const refreshUserData = async () => {
+  const refreshUserData = useCallback(async () => {
     const updatedUser = await getUser(activeUserId);
     setUser(updatedUser);
-  };
+  }, [activeUserId]);
 
-  const handleManualWorkoutLogged = async (workout) => {
+  const handleManualWorkoutLogged = useCallback(async (workout) => {
     try {
       // Get AI feedback for the manual workout
       const { sendWorkoutFeedback } = await import('./services/api');
@@ -127,7 +144,7 @@ function AppContent() {
       console.error('Error saving manual workout:', error);
       alert('Failed to save workout. Please try again.');
     }
-  };
+  }, [activeUserId, user]);
 
   if (!user) {
     return <UserSelection onUserSelected={handleUserSelected} />;
@@ -214,78 +231,80 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {view === 'home' && (
-          <>
-            <WorkoutGenerator
-              user={user}
-              onWorkoutGenerated={handleWorkoutGenerated}
-            />
-            
-            {/* Manual Workout Log Button */}
-            <div className="mt-6">
-              <button
-                onClick={() => setView('manualLog')}
-                className="w-full px-6 py-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-all border-2 border-gray-600 hover:border-gray-500"
-              >
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-2xl">📝</span>
-                  <div className="text-left">
-                    <div>Log External Workout</div>
-                    <div className="text-sm text-gray-400 font-normal">Track workouts you did outside the app</div>
+        <Suspense fallback={<LoadingFallback />}>
+          {view === 'home' && (
+            <>
+              <WorkoutGenerator
+                user={user}
+                onWorkoutGenerated={handleWorkoutGenerated}
+              />
+              
+              {/* Manual Workout Log Button */}
+              <div className="mt-6">
+                <button
+                  onClick={() => setView('manualLog')}
+                  className="w-full px-6 py-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-all border-2 border-gray-600 hover:border-gray-500"
+                >
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-2xl">📝</span>
+                    <div className="text-left">
+                      <div>Log External Workout</div>
+                      <div className="text-sm text-gray-400 font-normal">Track workouts you did outside the app</div>
+                    </div>
                   </div>
-                </div>
-              </button>
-            </div>
-          </>
-        )}
+                </button>
+              </div>
+            </>
+          )}
+          
+          {view === 'manualLog' && (
+            <ManualWorkoutLog
+              user={user}
+              onWorkoutLogged={handleManualWorkoutLogged}
+              onCancel={() => setView('home')}
+            />
+          )}
+          
+          {view === 'tracker' && currentWorkout && (
+            <ExerciseTracker
+              user={user}
+              workout={currentWorkout}
+              onComplete={handleWorkoutComplete}
+              onRegenerate={handleRegenerateWorkout}
+              onCancel={() => {
+                setCurrentWorkout(null);
+                setView('home');
+                refreshUserData();
+              }}
+            />
+          )}
         
-        {view === 'manualLog' && (
-          <ManualWorkoutLog
-            user={user}
-            onWorkoutLogged={handleManualWorkoutLogged}
-            onCancel={() => setView('home')}
-          />
-        )}
-        
-        {view === 'tracker' && currentWorkout && (
-          <ExerciseTracker
-            user={user}
-            workout={currentWorkout}
-            onComplete={handleWorkoutComplete}
-            onRegenerate={handleRegenerateWorkout}
-            onCancel={() => {
-              setCurrentWorkout(null);
-              setView('home');
-              refreshUserData();
-            }}
-          />
-        )}
-        
-        {view === 'history' && (
-          <History
-            user={user}
-            onRefresh={refreshUserData}
-          />
-        )}
+          {view === 'history' && (
+            <History
+              user={user}
+              onRefresh={refreshUserData}
+            />
+          )}
 
-        {view === 'progress' && (
-          <Progress
-            user={user}
-            onRefresh={refreshUserData}
-          />
-        )}
-        
-        {view === 'achievements' && (
-          <Achievements
-            user={user}
-          />
-        )}
-        
-        {view === 'dashboard' && (
-          <ProgressDashboard
-            user={user}
-          />
-        )}
+          {view === 'progress' && (
+            <Progress
+              user={user}
+              onRefresh={refreshUserData}
+            />
+          )}
+          
+          {view === 'achievements' && (
+            <Achievements
+              user={user}
+            />
+          )}
+          
+          {view === 'dashboard' && (
+            <ProgressDashboard
+              user={user}
+            />
+          )}
+        </Suspense>
       </main>
 
       {/* Coach Avatar - Shows motivational messages */}

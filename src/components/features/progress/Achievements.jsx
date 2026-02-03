@@ -120,8 +120,12 @@ function Achievements({ user }) {
     );
   }
   
-  const earnedBadges = BADGES.filter(badge => badge.requirement(user));
-  const lockedBadges = BADGES.filter(badge => !badge.requirement(user));
+  // Memoize expensive badge calculations
+  const { earnedBadges, lockedBadges } = useMemo(() => {
+    const earned = BADGES.filter(badge => badge.requirement(user));
+    const locked = BADGES.filter(badge => !badge.requirement(user));
+    return { earnedBadges: earned, lockedBadges: locked };
+  }, [user.workouts]);
   const streak = getStreak(user);
   
   // Celebrate streak milestones on mount

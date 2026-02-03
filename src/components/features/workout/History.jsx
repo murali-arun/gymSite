@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
+import { EmptyState } from '../../molecules';
+import { Badge } from '../../atoms';
 
-function History({ user, onRefresh }) {
+const History = memo(function History({ user, onRefresh }) {
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const workouts = user?.workouts || [];
 
@@ -164,6 +166,6 @@ function History({ user, onRefresh }) {
       </div>
     </div>
   );
-}
+});
 
 export default History;
