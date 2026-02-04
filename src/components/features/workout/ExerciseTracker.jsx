@@ -46,6 +46,10 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   const [showCoreSelector, setShowCoreSelector] = useState(false);
   const [coreExerciseIndex, setCoreExerciseIndex] = useState(null);
   
+  // Bilateral exercise tracking (for exercises done on each side)
+  const [currentSide, setCurrentSide] = useState('left'); // 'left' or 'right'
+  const [completedSides, setCompletedSides] = useState({}); // Track which sides are done for each set
+  
   // Core exercise variations
   const coreExerciseOptions = [
     'Dead Bug',
@@ -117,6 +121,24 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   };
 
   const handleNextSet = () => {
+    const currentExercise = exercises[currentExerciseIndex];
+    const isPerSide = currentExercise.perSide;
+    const setKey = `${currentExerciseIndex}-${currentSetIndex}`;
+    
+    // For bilateral exercises, need to complete both sides
+    if (isPerSide) {
+      if (currentSide === 'left') {
+        // Just completed left side, now do right side
+        setCurrentSide('right');
+        setCompletedSides(prev => ({ ...prev, [`${setKey}-left`]: true }));
+        return;
+      } else {
+        // Completed both sides, mark set as done
+        setCompletedSides(prev => ({ ...prev, [`${setKey}-right`]: true }));
+        setCurrentSide('left'); // Reset for next set
+      }
+    }
+    
     const timestamp = {
       exerciseIndex: currentExerciseIndex,
       setIndex: currentSetIndex,
@@ -131,7 +153,6 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     setExercises(updated);
 
     // Move to next set or exercise
-    const currentExercise = exercises[currentExerciseIndex];
     if (currentSetIndex < currentExercise.sets.length - 1) {
       // Next set in same exercise
       setCurrentSetIndex(currentSetIndex + 1);
@@ -660,6 +681,31 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             <div className="text-2xl text-gray-300">
               Set {currentSetIndex + 1} of {exercises[currentExerciseIndex].sets.length}
             </div>
+            {exercises[currentExerciseIndex].perSide && (
+              <div className="mt-4 inline-flex items-center gap-2 bg-purple-600/30 border border-purple-500 rounded-lg px-4 py-2">
+                <span className="text-sm text-purple-200">Per Side Exercise</span>
+                <div className="flex gap-2">
+                  <div className={`px-3 py-1 rounded ${
+                    currentSide === 'left' 
+                      ? 'bg-purple-600 text-white font-bold' 
+                      : completedSides[`${currentExerciseIndex}-${currentSetIndex}-left`]
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-700 text-gray-400'
+                  }`}>
+                    ⬅️ Left
+                  </div>
+                  <div className={`px-3 py-1 rounded ${
+                    currentSide === 'right' 
+                      ? 'bg-purple-600 text-white font-bold' 
+                      : completedSides[`${currentExerciseIndex}-${currentSetIndex}-right`]
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-700 text-gray-400'
+                  }`}>
+                    Right ➡️
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="bg-gray-800/50 rounded-xl p-6 mb-6">
@@ -706,7 +752,9 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
             {/* Reps Selection */}
             <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-400 mb-2">Reps</label>
+              <label className="block text-xs font-medium text-gray-400 mb-2">
+                {exercises[currentExerciseIndex].perSide ? `Reps (per ${currentSide} side)` : 'Reps'}
+              </label>
               <div className="flex items-center gap-3 bg-gray-700/50 rounded-lg p-2">
                 <button
                   onClick={() => {
@@ -721,7 +769,11 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                   <div className="text-3xl font-bold text-white">
                     {exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0}
                   </div>
-                  <div className="text-xs text-gray-400">reps</div>
+                  <div className="text-xs text-gray-400">
+                    {exercises[currentExerciseIndex].perSide 
+                      ? `reps on ${currentSide}` 
+                      : 'reps'}
+                  </div>
                 </div>
                 <button
                   onClick={() => {
@@ -733,6 +785,11 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                   +
                 </button>
               </div>
+              {exercises[currentExerciseIndex].perSide && (
+                <div className="mt-2 text-xs text-purple-400 text-center">
+                  💡 You'll do {exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0} reps on each side
+                </div>
+              )}
             </div>
             
             {/* Advanced Tracking Toggle */}
@@ -828,11 +885,13 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             onClick={handleNextSet}
             className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-6 px-8 rounded-xl transition-all shadow-lg shadow-green-900/50 text-xl"
           >
-            {currentSetIndex < exercises[currentExerciseIndex].sets.length - 1 
-              ? '✓ Complete Set' 
-              : currentExerciseIndex < exercises.length - 1 
-                ? '✓ Complete Set & Next Exercise' 
-                : '✓ Complete Final Set'}
+            {exercises[currentExerciseIndex].perSide && currentSide === 'left'
+              ? `✓ Complete ${currentSide.charAt(0).toUpperCase() + currentSide.slice(1)} Side → Switch to Right`
+              : currentSetIndex < exercises[currentExerciseIndex].sets.length - 1 
+                ? '✓ Complete Set' 
+                : currentExerciseIndex < exercises.length - 1 
+                  ? '✓ Complete Set & Next Exercise' 
+                  : '✓ Complete Final Set'}
           </button>
         </div>
       )}
@@ -853,7 +912,14 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
           key={exIndex}
           className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700"
         >
-          <h3 className="text-xl font-bold text-white mb-4">{exercise.name}</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-xl font-bold text-white">{exercise.name}</h3>
+            {exercise.perSide && (
+              <span className="px-2 py-1 bg-purple-600/30 border border-purple-500 rounded text-xs text-purple-200">
+                Per Side ⬅️➡️
+              </span>
+            )}
+          </div>
           
           <div className="space-yClick-3">
             {exercise.sets.map((set, setIndex) => (
@@ -904,7 +970,13 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                     </div>
                   )}
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">{isBodyweightExercise(exercise) ? 'Reps / Duration (sec)' : 'Reps'}</label>
+                    <label className="block text-xs text-gray-400 mb-1">
+                      {exercise.perSide 
+                        ? 'Reps per side' 
+                        : isBodyweightExercise(exercise) 
+                          ? 'Reps / Duration (sec)' 
+                          : 'Reps'}
+                    </label>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => updateSet(exIndex, setIndex, 'reps', Math.max(0, (set.reps || 0) - 1))}

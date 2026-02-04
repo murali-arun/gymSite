@@ -6,7 +6,7 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
   const [workoutDetails, setWorkoutDetails] = useState({
     date: new Date().toISOString().split('T')[0],
     description: '',
-    exercises: [{ name: '', sets: '', reps: '', weight: '' }],
+    exercises: [{ name: '', sets: '', reps: '', weight: '', perSide: false }],
     cardio: {
       activity: '',
       duration: '',
@@ -21,7 +21,7 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
   const addExercise = () => {
     setWorkoutDetails({
       ...workoutDetails,
-      exercises: [...workoutDetails.exercises, { name: '', sets: '', reps: '', weight: '' }]
+      exercises: [...workoutDetails.exercises, { name: '', sets: '', reps: '', weight: '', perSide: false }]
     });
   };
 
@@ -69,6 +69,7 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
           .filter(ex => ex.name.trim() !== '')
           .map(ex => ({
             name: ex.name,
+            perSide: ex.perSide || false,
             sets: Array.from({ length: parseInt(ex.sets) || 1 }, (_, i) => ({
               weight: ex.weight || '0',
               reps: ex.reps || '0',
@@ -327,7 +328,8 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Reps</label>
+                      {exercise.perSide ? 'Reps/Side' : 'Reps'}
+                    </label>
                     <input
                       type="number"
                       placeholder="Reps"
@@ -347,6 +349,24 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
                       onChange={(e) => updateExercise(index, 'weight', e.target.value)}
                       className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exercise.perSide || false}
+                      onChange={(e) => updateExercise(index, 'perSide', e.target.checked)}
+                      className="rounded"
+                    />
+                    <span>Per Side Exercise (e.g., Bulgarian Split Squat, Side Plank)</span>
+                  </label>
+                  {exercise.perSide && (
+                    <p className="text-xs text-purple-400 mt-1 ml-6">
+                      💡 Each set means {exercise.reps || 'X'} reps on BOTH left and right sides
+                    </p>
+                  )}
                   </div>
                 </div>
               </div>

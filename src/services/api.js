@@ -187,6 +187,7 @@ For STRENGTH workouts:
   "exercises": [
     {
       "name": "Exercise Name",
+      "perSide": false,
       "sets": [
         {"weight": 0, "reps": 0, "completed": false},
         {"weight": 0, "reps": 0, "completed": false}
@@ -195,6 +196,33 @@ For STRENGTH workouts:
   ],
   "summary": "Brief explanation IN YOUR COACHING VOICE"
 }
+
+IMPORTANT - BILATERAL/UNILATERAL EXERCISES:
+Some exercises are performed on each side independently (bilateral/unilateral). Set "perSide": true for these:
+- Bulgarian Split Squats (each leg)
+- Lunges (each leg)
+- Single-Leg Deadlifts (each leg)
+- Single-Leg Press (each leg)
+- Step-Ups (each leg)
+- Pistol Squats (each leg)
+- Side Planks (each side)
+- Single-Arm Dumbbell Rows (each arm)
+- Single-Arm Overhead Press (each arm)
+- Single-Arm Cable Exercises (each arm)
+- Any exercise with "Single", "Unilateral", or "Each" in the name
+
+When perSide is true, the user will perform the specified reps on EACH side (e.g., 10 reps per leg = 20 total reps).
+For time-based exercises (planks), use reps as seconds per side.
+
+EXAMPLE:
+{
+  "name": "Bulgarian Split Squat",
+  "perSide": true,
+  "sets": [
+    {"weight": 25, "reps": 10, "completed": false}
+  ]
+}
+This means: 10 reps on left leg, then 10 reps on right leg, with 25 lbs.
 
 For CARDIO workouts:
 {
