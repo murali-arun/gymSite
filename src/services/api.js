@@ -11,15 +11,16 @@ const getHeaders = () => {
   return headers;
 };
 
-async function callLiteLLM(messages) {
+async function callLiteLLM(messages, taskType = 'workout') {
   console.log('=== SENDING TO AI ===');
+  console.log('Task Type:', taskType);
   console.log('Messages:', JSON.stringify(messages, null, 2));
   console.log('=====================');
   
   const response = await fetch(`${BACKEND_API_URL}/generate-workout`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ messages })
+    body: JSON.stringify({ messages, taskType })
   });
 
   if (!response.ok) {
@@ -84,7 +85,7 @@ Severity "critical" means regenerate required, "minor" means acceptable with war
   ];
 
   try {
-    const validationResponse = await callLiteLLM(validationMessages);
+    const validationResponse = await callLiteLLM(validationMessages, 'validation');
     
     // Clean response
     let cleanValidation = validationResponse.trim();
@@ -170,7 +171,7 @@ Create a comprehensive progress summary that I can use to program their next wor
   ];
 
   try {
-    const summary = await callLiteLLM(messages);
+    const summary = await callLiteLLM(messages, 'summary');
     console.log('=== PROGRESS SUMMARY CREATED ===');
     console.log(summary);
     console.log('================================');
@@ -623,7 +624,7 @@ Keep feedback concise (2-4 sentences) but personalized and actionable.`
   });
 
   try {
-    const feedback = await callLiteLLM(messages);
+    const feedback = await callLiteLLM(messages, 'feedback');
     
     console.log('=== AI FEEDBACK ===');
     console.log(feedback);
@@ -638,3 +639,131 @@ Keep feedback concise (2-4 sentences) but personalized and actionable.`
   }
 }
 
+export async function generateWorkoutPlan(user, daysCount = 3, coachPersonality = 'iron') {
+  console.log(`=== GENERATING ${daysCount}-DAY WORKOUT PLAN ===`);
+  
+  const coachVoices = {
+    iron: "You are Coach Iron - a tough-love, no-nonsense strength coach.",
+    zen: "You are Coach Zen - a calm, mindful fitness guide.",
+    blaze: "You are Coach Blaze - a high-energy, enthusiastic hype coach!",
+    sage: "You are Coach Sage - a wise, analytical programming expert."
+  };
+
+  const messages = [
+    {
+      role: 'system',
+      content: `${coachVoices[coachPersonality] || coachVoices.iron}
+
+You are creating a ${daysCount}-day workout plan. Generate a structured plan with variety and progression.
+
+MULTI-DAY PLANNING PRINCIPLES:
+- Vary muscle groups (don't hit same muscles back-to-back)
+- Include mix of strength, cardio, and recovery
+- Typical weekly split: Upper body, Lower body, Cardio, Full body, Active recovery
+- Progress intensity across days (hard, moderate, easy pattern)
+- Similar exercises can repeat but with different rep schemes
+
+RESPONSE FORMAT - Return ONLY valid JSON (no markdown):
+{
+  "planSummary": "Brief overview of the ${daysCount}-day plan",
+  "workouts": [
+    {
+      "dayNumber": 1,
+      "title": "Upper Body Strength",
+      "type": "strength",
+      "exercises": [
+        {
+          "name": "Barbell Bench Press",
+          "perSide": false,
+          "sets": [
+            {"weight": 135, "reps": 8, "completed": false},
+            {"weight": 135, "reps": 8, "completed": false},
+            {"weight": 135, "reps": 8, "completed": false}
+          ]
+        }
+      ],
+      "notes": "Focus on form and controlled tempo"
+    }
+  ]
+}
+
+For cardio days:
+{
+  "dayNumber": 2,
+  "title": "Cardio - Running",
+  "type": "cardio",
+  "cardio": {
+    "activity": "Running",
+    "duration": 30,
+    "distance": 3.0,
+    "intensity": "moderate",
+    "intervals": []
+  },
+  "notes": "Keep steady pace"
+}
+
+IMPORTANT:
+- Each workout must be complete and ready to execute
+- Use realistic weights based on user history
+- Apply progressive overload from their recent workouts
+- Include specific exercise names (not generic)
+- Set perSide=true for unilateral exercises`
+    }
+  ];
+
+  // Add user context
+  if (user.progressSummary) {
+    messages.push({
+      role: 'user',
+      content: `My progress summary:\n\n${user.progressSummary}`
+    });
+  } else {
+    messages.push({
+      role: 'user',
+      content: `My info:\n\n${user.initialPrompt}`
+    });
+  }
+
+  // Add recent history
+  const recentHistory = user.conversationHistory.slice(-4);
+  recentHistory.forEach(msg => {
+    messages.push({
+      role: msg.role,
+      content: msg.content
+    });
+  });
+
+  // Request the plan
+  messages.push({
+    role: 'user',
+    content: `Generate a ${daysCount}-day workout plan for me. I want variety and proper progression. Include a mix of strength and cardio based on my goals.`
+  });
+
+  try {
+    const response = await callLiteLLM(messages, 'workout');
+    
+    // Clean response
+    let cleanResponse = response.trim();
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    } else if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.replace(/```\n?/g, '');
+    }
+    cleanResponse = cleanResponse.replace(/,(\s*[}\]])/g, '$1');
+    
+    const planData = JSON.parse(cleanResponse);
+    
+    console.log('=== WORKOUT PLAN GENERATED ===');
+    console.log(`Days: ${planData.workouts?.length || 0}`);
+    console.log('==============================');
+    
+    return {
+      ...planData,
+      createdAt: new Date().toISOString(),
+      userId: user.id
+    };
+  } catch (error) {
+    console.error('Error generating workout plan:', error);
+    throw error;
+  }
+}

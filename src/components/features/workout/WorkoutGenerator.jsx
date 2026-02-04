@@ -1,6 +1,7 @@
-import React, { useState, memo, useCallback } from 'react';
-import { generateWorkout } from '../../../services/api';
+import React, { useState, memo, useCallback, useEffect } from 'react';
+import { generateWorkout, generateWorkoutPlan } from '../../../services/api';
 import { setCurrentWorkout, addConversationMessage } from '../../../utils/storage';
+import { getWorkoutPlan, setWorkoutPlan, getNextWorkoutFromPlan, getRemainingWorkoutsCount } from '../../../utils/workoutPlanCache';
 import { useCoach } from '../../../contexts/CoachContext';
 import { Container, Section, InfoBox, Grid, Stack } from '../../organisms';
 import { FormField } from '../../molecules';
@@ -9,6 +10,7 @@ import { Button } from '../../atoms';
 const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerated }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [remainingWorkouts, setRemainingWorkouts] = useState(0);
   const [preferences, setPreferences] = useState({
     activityType: 'strength', // strength, cardio, stretching, mixed
     focus: '',
@@ -16,6 +18,108 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
     notes: ''
   });
   const { coachType, motivate } = useCoach();
+
+  useEffect(() => {
+    // Check for cached workout plan
+    async function checkPlan() {
+      const count = await getRemainingWorkoutsCount(user.id);
+      setRemainingWorkouts(count);
+    }
+    checkPlan();
+  }, [user.id]);
+
+  const handleGeneratePlan = useCallback(async (daysCount = 3) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const plan = await generateWorkoutPlan(user, daysCount, coachType);
+      
+      // Add scheduled dates to workouts
+      const today = new Date();
+      plan.workouts = plan.workouts.map((workout, index) => {
+        const scheduledDate = new Date(today);
+        scheduledDate.setDate(today.getDate() + index);
+        return {
+          ...workout,
+          scheduledDate: scheduledDate.toISOString().split('T')[0],
+          used: false
+        };
+      });
+      
+      // Save plan to cache
+      await setWorkoutPlan(user.id, plan);
+      
+      // Add to conversation
+      await addConversationMessage(user.id, 'user', `Generate a ${daysCount}-day workout plan`);
+      await addConversationMessage(user.id, 'assistant', plan.planSummary || `Created ${daysCount}-day plan`);
+      
+      // Load first workout
+      const firstWorkout = plan.workouts[0];
+      const workout = {
+        id: Date.now(),
+        date: firstWorkout.scheduledDate,
+        type: firstWorkout.type,
+        exercises: firstWorkout.exercises || [],
+        cardio: firstWorkout.cardio,
+        aiSuggestion: firstWorkout.notes || plan.planSummary,
+        aiResponse: `Day 1: ${firstWorkout.title}`,
+        generatedAt: new Date().toISOString(),
+        fromPlan: true,
+        planDay: 1
+      };
+      
+      await setCurrentWorkout(user.id, workout);
+      setRemainingWorkouts(daysCount - 1);
+      motivate('workoutGenerated');
+      onWorkoutGenerated(workout);
+      
+    } catch (err) {
+      setError(err.message || 'Failed to generate workout plan');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, coachType, motivate, onWorkoutGenerated]);
+
+  const handleUseNextFromPlan = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const nextWorkout = await getNextWorkoutFromPlan(user.id);
+      
+      if (!nextWorkout) {
+        setError('No workouts left in plan. Generate a new plan.');
+        setRemainingWorkouts(0);
+        setLoading(false);
+        return;
+      }
+
+      const workout = {
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        type: nextWorkout.type,
+        exercises: nextWorkout.exercises || [],
+        cardio: nextWorkout.cardio,
+        aiSuggestion: nextWorkout.notes || nextWorkout.title,
+        aiResponse: `Day ${nextWorkout.dayNumber}: ${nextWorkout.title}`,
+        generatedAt: new Date().toISOString(),
+        fromPlan: true,
+        planDay: nextWorkout.dayNumber
+      };
+      
+      await setCurrentWorkout(user.id, workout);
+      const count = await getRemainingWorkoutsCount(user.id);
+      setRemainingWorkouts(count - 1);
+      motivate('workoutGenerated');
+      onWorkoutGenerated(workout);
+      
+    } catch (err) {
+      setError(err.message || 'Failed to load workout from plan');
+    } finally {
+      setLoading(false);
+    }
+  }, [user.id, motivate, onWorkoutGenerated]);
 
   const handleGenerate = useCallback(async () => {
     setLoading(true);
@@ -51,12 +155,81 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
 
   return (
     <Stack spacing="lg">
+      {/* Cached Plan Info */}
+      {remainingWorkouts > 0 && (
+        <Container variant="default" padding="md">
+          <div className="glass-strong rounded-xl p-4 border border-green-500/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-green-400 font-semibold">📅 Workout Plan Active</div>
+                <div className="text-xs text-gray-400 mt-1">{remainingWorkouts} workouts remaining</div>
+              </div>
+              <Button
+                onClick={handleUseNextFromPlan}
+                disabled={loading}
+                variant="primary"
+                size="sm"
+              >
+                Use Next Workout
+              </Button>
+            </div>
+          </div>
+        </Container>
+      )}
+
       <Container variant="default" padding="lg">
         <Section 
           title="Ready to Train?" 
-          description="Let AI suggest your workout for today"
+          description="Generate a single workout or multi-day plan"
           icon="🏋️"
         />
+
+        {remainingWorkouts === 0 && (
+          <div className="mt-6 mb-6">
+            <div className="glass rounded-xl p-5 border border-primary-500/30">
+              <div className="flex items-start gap-3 mb-4">
+                <span className="text-2xl">💡</span>
+                <div className="flex-1">
+                  <h4 className="text-white font-semibold mb-1">Save Time & Money with Multi-Day Plans</h4>
+                  <p className="text-sm text-gray-400">Generate 3-7 days of workouts at once. Workouts are varied, progressive, and cached locally.</p>
+                </div>
+              </div>
+              <Grid cols={3} gap="sm">
+                <Button
+                  onClick={() => handleGeneratePlan(3)}
+                  disabled={loading}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                >
+                  {loading ? '...' : '3 Days'}
+                </Button>
+                <Button
+                  onClick={() => handleGeneratePlan(5)}
+                  disabled={loading}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                >
+                  {loading ? '...' : '5 Days'}
+                </Button>
+                <Button
+                  onClick={() => handleGeneratePlan(7)}
+                  disabled={loading}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                >
+                  {loading ? '...' : '7 Days'}
+                </Button>
+              </Grid>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 mb-4 text-center text-sm text-gray-500">
+          Or generate a single workout for today
+        </div>
 
         <Stack spacing="md" className="mt-6">
           <div>

@@ -12,6 +12,28 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 const DATA_FILE = path.join(__dirname, 'data', 'users.json');
 
+// Model configuration for different tasks
+const MODEL_CONFIG = {
+  // Primary workout generation - balance of cost and quality
+  workoutGeneration: process.env.MODEL_WORKOUT || 'gpt-5-mini',
+  
+  // Validation - fast and cheap
+  validation: process.env.MODEL_VALIDATION || 'xai/grok-4-fast-non-reasoning',
+  
+  // Progress summaries - infrequent, needs quality
+  progressSummary: process.env.MODEL_SUMMARY || 'gpt-4o',
+  
+  // Workout feedback - frequent but simple
+  feedback: process.env.MODEL_FEEDBACK || 'gpt-4o-mini',
+};
+
+console.log('=== MODEL CONFIGURATION ===');
+console.log('Workout Generation:', MODEL_CONFIG.workoutGeneration);
+console.log('Validation:', MODEL_CONFIG.validation);
+console.log('Progress Summary:', MODEL_CONFIG.progressSummary);
+console.log('Feedback:', MODEL_CONFIG.feedback);
+console.log('===========================');
+
 // Middleware - CORS must come first
 app.use(cors({
   origin: function(origin, callback) {
@@ -219,11 +241,29 @@ app.post('/api/active-user', async (req, res) => {
 // Generate workout using LiteLLM
 app.post('/api/generate-workout', async (req, res) => {
   try {
-    const { messages } = req.body;
+    const { messages, taskType = 'workout' } = req.body;
+    
+    // Select appropriate model based on task
+    let model;
+    switch(taskType) {
+      case 'validation':
+        model = MODEL_CONFIG.validation;
+        break;
+      case 'summary':
+        model = MODEL_CONFIG.progressSummary;
+        break;
+      case 'feedback':
+        model = MODEL_CONFIG.feedback;
+        break;
+      case 'workout':
+      default:
+        model = MODEL_CONFIG.workoutGeneration;
+    }
     
     console.log('=== GENERATE WORKOUT REQUEST ===');
+    console.log('Task Type:', taskType);
+    console.log('Selected Model:', model);
     console.log('LITELLM_API_URL:', process.env.LITELLM_API_URL);
-    console.log('LITELLM_MODEL:', process.env.LITELLM_MODEL);
     console.log('Has API Key:', !!process.env.LITELLM_API_KEY);
     console.log('Message count:', messages?.length);
     console.log('================================');
@@ -235,7 +275,7 @@ app.post('/api/generate-workout', async (req, res) => {
         'Authorization': `Bearer ${process.env.LITELLM_API_KEY}`
       },
       body: JSON.stringify({
-        model: process.env.LITELLM_MODEL,
+        model: model,
         messages
       })
     });
