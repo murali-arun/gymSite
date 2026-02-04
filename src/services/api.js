@@ -36,6 +36,82 @@ async function callLiteLLM(messages) {
   return data.choices[0].message.content;
 }
 
+async function validateWorkout(workoutData, activityType) {
+  console.log('=== VALIDATING WORKOUT ===');
+  
+  const validationMessages = [
+    {
+      role: 'system',
+      content: `You are a workout quality validator. Your job is to verify that workout programs are properly structured and safe.
+
+VALIDATION CRITERIA:
+
+For STRENGTH workouts, check:
+1. Exercise names are SPECIFIC and REAL (e.g., "Barbell Back Squat" not "Squats" or "Leg Exercise")
+2. Each exercise has clear sets (array with at least 1 set)
+3. Each set has NUMERIC weight and reps (no zeros unless bodyweight exercise)
+4. Rep ranges are realistic (typically 1-30 reps, not 0 or 100+)
+5. Weight values are realistic (0-500 lbs for most exercises)
+6. Total volume is appropriate (typically 12-25 sets for strength day, not 50+)
+7. Exercise selection makes sense (no contradictions like "heavy deadlifts" with weight: 0)
+8. "perSide" property exists and is boolean (true for unilateral exercises, false otherwise)
+
+For CARDIO workouts, check:
+1. Activity is specific (e.g., "Running" not "Exercise")
+2. Duration is numeric and realistic (5-180 minutes typically)
+3. Intensity level is specified
+4. Distance is either null or a positive number
+
+For STRETCHING workouts, check:
+1. Exercise names are specific stretches
+2. Duration per stretch is reasonable (15-120 seconds typically)
+
+RESPOND WITH ONLY A JSON OBJECT:
+{
+  "valid": true/false,
+  "issues": ["issue 1", "issue 2"],
+  "severity": "critical/minor/none"
+}
+
+If valid=true, issues should be empty array.
+If valid=false, list ALL specific issues found.
+Severity "critical" means regenerate required, "minor" means acceptable with warnings.`
+    },
+    {
+      role: 'user',
+      content: `Validate this ${activityType} workout:\n\n${JSON.stringify(workoutData, null, 2)}`
+    }
+  ];
+
+  try {
+    const validationResponse = await callLiteLLM(validationMessages);
+    
+    // Clean response
+    let cleanValidation = validationResponse.trim();
+    if (cleanValidation.startsWith('```json')) {
+      cleanValidation = cleanValidation.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    } else if (cleanValidation.startsWith('```')) {
+      cleanValidation = cleanValidation.replace(/```\n?/g, '');
+    }
+    
+    const validation = JSON.parse(cleanValidation);
+    
+    console.log('=== VALIDATION RESULT ===');
+    console.log(JSON.stringify(validation, null, 2));
+    console.log('=========================');
+    
+    return validation;
+  } catch (error) {
+    console.error('Validation error:', error);
+    // If validation fails, assume workout is invalid to be safe
+    return {
+      valid: false,
+      issues: ['Validation system error - regenerating for safety'],
+      severity: 'critical'
+    };
+  }
+}
+
 export async function generateProgressSummary(user) {
   console.log('=== GENERATING PROGRESS SUMMARY ===');
   
@@ -302,93 +378,170 @@ Make the summary match your coaching personality while being genuinely helpful!`
     content: currentRequest
   });
 
-  try {
-    const response = await callLiteLLM(messages);
-    
-    console.log('=== RAW AI RESPONSE ===');
-    console.log(response);
-    console.log('======================');
+  const MAX_RETRIES = 3;
+  let attempt = 0;
+  let lastError = null;
 
-    // Clean up response - remove markdown code blocks if present
-    let cleanResponse = response.trim();
-    if (cleanResponse.startsWith('```json')) {
-      cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-    } else if (cleanResponse.startsWith('```')) {
-      cleanResponse = cleanResponse.replace(/```\n?/g, '');
-    }
+  while (attempt < MAX_RETRIES) {
+    attempt++;
+    console.log(`=== GENERATION ATTEMPT ${attempt}/${MAX_RETRIES} ===`);
     
-    // Remove any trailing commas before closing braces/brackets (common JSON error)
-    cleanResponse = cleanResponse.replace(/,(\s*[}\]])/g, '$1');
-    
-    console.log('=== CLEANED RESPONSE ===');
-    console.log(cleanResponse);
-    console.log('========================');
-
-    let workoutData;
     try {
-      workoutData = JSON.parse(cleanResponse);
-    } catch (parseError) {
-      console.error('=== JSON PARSE ERROR ===');
-      console.error('Parse error:', parseError);
-      console.error('Attempted to parse:', cleanResponse);
-      console.error('========================');
-      throw new Error(`Invalid JSON from AI: ${parseError.message}`);
-    }
-    
-    // Validate the structure based on workout type
-    const workoutType = workoutData.type || 'strength';
-    
-    if (workoutType === 'strength' || workoutType === 'mixed') {
-      if (!workoutData.exercises || !Array.isArray(workoutData.exercises)) {
-        console.error('=== INVALID WORKOUT STRUCTURE ===');
-        console.error('Missing or invalid exercises array:', workoutData);
-        console.error('==================================');
-        throw new Error('AI response missing exercises array');
+      const response = await callLiteLLM(messages);
+      
+      console.log('=== RAW AI RESPONSE ===');
+      console.log(response);
+      console.log('======================');
+
+      // Clean up response - remove markdown code blocks if present
+      let cleanResponse = response.trim();
+      if (cleanResponse.startsWith('```json')) {
+        cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      } else if (cleanResponse.startsWith('```')) {
+        cleanResponse = cleanResponse.replace(/```\n?/g, '');
       }
-    }
-    
-    console.log('=== PARSED WORKOUT DATA ===');
-    console.log(JSON.stringify(workoutData, null, 2));
-    console.log('===========================');
+      
+      // Remove any trailing commas before closing braces/brackets (common JSON error)
+      cleanResponse = cleanResponse.replace(/,(\s*[}\]])/g, '$1');
+      
+      console.log('=== CLEANED RESPONSE ===');
+      console.log(cleanResponse);
+      console.log('========================');
 
-    // Return workout with appropriate structure
-    const baseWorkout = {
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      type: workoutType,
-      aiSuggestion: workoutData.summary || 'Workout generated',
-      generatedAt: new Date().toISOString(),
-      aiResponse: response // Store full AI response for conversation history
-    };
+      let workoutData;
+      try {
+        workoutData = JSON.parse(cleanResponse);
+      } catch (parseError) {
+        console.error('=== JSON PARSE ERROR ===');
+        console.error('Parse error:', parseError);
+        console.error('Attempted to parse:', cleanResponse);
+        console.error('========================');
+        lastError = new Error(`Invalid JSON from AI: ${parseError.message}`);
+        
+        // Add feedback to messages for next attempt
+        messages.push({
+          role: 'assistant',
+          content: response
+        });
+        messages.push({
+          role: 'user',
+          content: `ERROR: Your response was not valid JSON. Please provide ONLY a valid JSON object with no markdown formatting. Try again.`
+        });
+        continue; // Retry
+      }
+      
+      // Validate the structure based on workout type
+      const workoutType = workoutData.type || 'strength';
+      
+      if (workoutType === 'strength' || workoutType === 'mixed') {
+        if (!workoutData.exercises || !Array.isArray(workoutData.exercises)) {
+          console.error('=== INVALID WORKOUT STRUCTURE ===');
+          console.error('Missing or invalid exercises array:', workoutData);
+          console.error('==================================');
+          lastError = new Error('AI response missing exercises array');
+          
+          messages.push({
+            role: 'assistant',
+            content: response
+          });
+          messages.push({
+            role: 'user',
+            content: `ERROR: Missing or invalid exercises array. Please ensure your JSON includes a valid "exercises" array. Try again.`
+          });
+          continue; // Retry
+        }
+      }
+      
+      console.log('=== PARSED WORKOUT DATA ===');
+      console.log(JSON.stringify(workoutData, null, 2));
+      console.log('===========================');
 
-    // Add type-specific data
-    if (workoutType === 'strength') {
-      baseWorkout.exercises = workoutData.exercises;
-    } else if (workoutType === 'cardio') {
-      baseWorkout.cardio = {
-        activity: workoutData.activity,
-        duration: workoutData.duration,
-        distance: workoutData.distance,
-        intensity: workoutData.intensity,
-        intervals: workoutData.intervals || []
+      // VALIDATE WORKOUT QUALITY
+      const validation = await validateWorkout(workoutData, preferences.activityType || 'strength');
+      
+      if (!validation.valid && validation.severity === 'critical') {
+        console.warn('=== WORKOUT VALIDATION FAILED ===');
+        console.warn('Issues:', validation.issues);
+        console.warn('=================================');
+        lastError = new Error(`Workout quality issues: ${validation.issues.join(', ')}`);
+        
+        // Provide specific feedback for regeneration
+        messages.push({
+          role: 'assistant',
+          content: response
+        });
+        messages.push({
+          role: 'user',
+          content: `QUALITY CHECK FAILED. Issues found:\n${validation.issues.map(issue => `- ${issue}`).join('\n')}\n\nPlease fix these issues and generate a new workout with proper exercise names, realistic weights/reps, and correct structure.`
+        });
+        continue; // Retry
+      }
+
+      if (!validation.valid && validation.severity === 'minor') {
+        console.warn('=== MINOR VALIDATION WARNINGS ===');
+        console.warn('Issues:', validation.issues);
+        console.warn('Proceeding anyway...');
+        console.warn('==================================');
+      }
+
+      // Validation passed! Return the workout
+      console.log('✅ WORKOUT VALIDATED SUCCESSFULLY');
+
+      // Return workout with appropriate structure
+      const baseWorkout = {
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        type: workoutType,
+        aiSuggestion: workoutData.summary || 'Workout generated',
+        generatedAt: new Date().toISOString(),
+        aiResponse: response // Store full AI response for conversation history
       };
-    } else if (workoutType === 'stretching') {
-      baseWorkout.exercises = workoutData.exercises; // stretching exercises with duration
-    } else if (workoutType === 'mixed') {
-      baseWorkout.exercises = workoutData.exercises || [];
-      if (workoutData.cardio) {
-        baseWorkout.cardio = workoutData.cardio;
-      }
-    }
 
-    return baseWorkout;
-  } catch (error) {
-    console.error('=== ERROR GENERATING WORKOUT ===');
-    console.error('Error:', error);
-    console.error('Error message:', error.message);
-    console.error('================================');
-    throw error; // Re-throw with original error message
+      // Add type-specific data
+      if (workoutType === 'strength') {
+        baseWorkout.exercises = workoutData.exercises;
+      } else if (workoutType === 'cardio') {
+        baseWorkout.cardio = {
+          activity: workoutData.activity,
+          duration: workoutData.duration,
+          distance: workoutData.distance,
+          intensity: workoutData.intensity,
+          intervals: workoutData.intervals || []
+        };
+      } else if (workoutType === 'stretching') {
+        baseWorkout.exercises = workoutData.exercises; // stretching exercises with duration
+      } else if (workoutType === 'mixed') {
+        baseWorkout.exercises = workoutData.exercises || [];
+        if (workoutData.cardio) {
+          baseWorkout.cardio = workoutData.cardio;
+        }
+      }
+
+      return baseWorkout;
+      
+    } catch (error) {
+      console.error(`=== ERROR ON ATTEMPT ${attempt} ===`);
+      console.error('Error:', error);
+      console.error('===================================');
+      lastError = error;
+      
+      if (attempt === MAX_RETRIES) {
+        break; // Exit loop if max retries reached
+      }
+      
+      // Add generic retry message
+      messages.push({
+        role: 'user',
+        content: `There was an error processing your response. Please try again with a valid, well-structured workout.`
+      });
+    }
   }
+
+  // All retries exhausted
+  console.error('=== ALL RETRIES EXHAUSTED ===');
+  console.error('Last error:', lastError);
+  console.error('=============================');
+  throw lastError || new Error('Failed to generate valid workout after multiple attempts');
 }
 
 export async function sendWorkoutFeedback(user, completedWorkout) {
