@@ -10,6 +10,7 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [preferences, setPreferences] = useState({
+    activityType: 'strength', // strength, cardio, stretching, mixed
     focus: '',
     equipment: '',
     notes: ''
@@ -27,7 +28,7 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
       await setCurrentWorkout(user.id, workout);
       
       // Add to conversation history
-      let userMessage = 'Generate today\'s workout.';
+      let userMessage = `Generate today's workout (${preferences.activityType}).`;
       if (preferences.focus || preferences.equipment || preferences.notes) {
         userMessage += ' Preferences:';
         if (preferences.focus) userMessage += ` Focus: ${preferences.focus}.`;
@@ -58,16 +59,32 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
         />
 
         <Stack spacing="md" className="mt-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Activity Type
+            </label>
+            <select
+              value={preferences.activityType}
+              onChange={(e) => setPreferences({ ...preferences, activityType: e.target.value })}
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="strength">💪 Strength Training</option>
+              <option value="cardio">🏃 Cardio (Running, Walking, Cycling)</option>
+              <option value="stretching">🧘 Stretching & Flexibility</option>
+              <option value="mixed">🔀 Mixed Training</option>
+            </select>
+          </div>
+
           <FormField
             label="Focus Area (optional)"
-            placeholder="e.g., chest, legs, back, full body"
+            placeholder={preferences.activityType === 'cardio' ? 'e.g., endurance, speed, hills' : preferences.activityType === 'stretching' ? 'e.g., lower body, full body' : 'e.g., chest, legs, back, full body'}
             value={preferences.focus}
             onChange={(e) => setPreferences({ ...preferences, focus: e.target.value })}
           />
 
           <FormField
             label="Available Equipment (optional)"
-            placeholder="e.g., dumbbells, barbell, machines"
+            placeholder={preferences.activityType === 'cardio' ? 'e.g., treadmill, outdoor, bike' : preferences.activityType === 'stretching' ? 'e.g., yoga mat, foam roller' : 'e.g., dumbbells, barbell, machines'}
             value={preferences.equipment}
             onChange={(e) => setPreferences({ ...preferences, equipment: e.target.value })}
           />
