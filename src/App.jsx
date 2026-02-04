@@ -151,78 +151,86 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-purple/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+      </div>
+      
       {/* Header */}
-      <header className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <header className="glass sticky top-0 z-40 animate-fade-in">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">💪 AI Gym Tracker</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-400 via-accent-cyan to-accent-purple bg-clip-text text-transparent">
+                💪 FitFlow AI
+              </h1>
               <p className="text-sm text-gray-400">Training with {user.name}</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setView('home')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                   view === 'home'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                    : 'glass-strong hover:bg-white/15 text-gray-300'
                 }`}
               >
                 Home
               </button>
               <button
                 onClick={() => setView('dashboard')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                   view === 'dashboard'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                    : 'glass-strong hover:bg-white/15 text-gray-300'
                 }`}
               >
                 📊 Stats
               </button>
               <button
                 onClick={() => setShowCoachSelector(true)}
-                className="px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all"
+                className="px-4 py-2 rounded-lg font-medium glass-strong hover:bg-white/15 text-accent-purple transition-all duration-300 hover:scale-105"
                 title="Choose Your Coach"
               >
                 🎯 Coach
               </button>
               <button
                 onClick={() => setView('achievements')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                   view === 'achievements'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                    : 'glass-strong hover:bg-white/15 text-gray-300'
                 }`}
               >
                 🏆 Badges
               </button>
               <button
                 onClick={() => setView('progress')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                   view === 'progress'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                    : 'glass-strong hover:bg-white/15 text-gray-300'
                 }`}
               >
                 Progress
               </button>
               <button
                 onClick={() => setView('history')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                   view === 'history'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                    : 'glass-strong hover:bg-white/15 text-gray-300'
                 }`}
               >
                 History
               </button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 rounded-lg font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all"
+                className="px-4 py-2 rounded-lg font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white"
               >
-                Switch User
+                Switch
               </button>
             </div>
           </div>
@@ -230,7 +238,7 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="relative max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <Suspense fallback={<LoadingFallback />}>
           {view === 'home' && (
             <>
