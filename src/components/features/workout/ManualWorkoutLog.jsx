@@ -328,6 +328,7 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
                     />
                   </div>
                   <div>
+                    <label className="block text-xs text-gray-400 mb-1">
                       {exercise.perSide ? 'Reps/Side' : 'Reps'}
                     </label>
                     <input
@@ -367,7 +368,6 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
                       💡 Each set means {exercise.reps || 'X'} reps on BOTH left and right sides
                     </p>
                   )}
-                  </div>
                 </div>
               </div>
             ))}
