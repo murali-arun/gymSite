@@ -732,26 +732,26 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
       {/* Timer Display */}
       {workoutStarted && countdown === null && (
-        <div className="fixed top-20 right-4 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg px-4 py-2 z-40">
-          <div className="flex gap-4 items-center">
+        <div className="fixed top-4 right-2 md:top-20 md:right-4 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg px-2 py-1.5 md:px-4 md:py-2 z-40 max-w-[95vw]">
+          <div className="flex gap-2 md:gap-4 items-center">
             <button
               onClick={togglePause}
-              className="flex-shrink-0 w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center justify-center text-white transition-all"
+              className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center justify-center text-white transition-all text-sm md:text-base"
               title={workoutPaused ? 'Resume' : 'Pause'}
             >
               {workoutPaused ? '▶' : '⏸'}
             </button>
             <div>
-              <div className="text-xs text-gray-400 mb-1">Total Time</div>
-              <div className="text-2xl font-bold text-white font-mono">{formatTime(elapsedTime)}</div>
+              <div className="text-[10px] md:text-xs text-gray-400 mb-0.5 md:mb-1">Total</div>
+              <div className="text-lg md:text-2xl font-bold text-white font-mono">{formatTime(elapsedTime)}</div>
             </div>
-            <div className="border-l border-gray-600 pl-4">
-              <div className="text-xs text-blue-400 mb-1">Exercise Time</div>
-              <div className="text-2xl font-bold text-blue-400 font-mono">{formatTime(exerciseElapsedTime)}</div>
+            <div className="border-l border-gray-600 pl-2 md:pl-4">
+              <div className="text-[10px] md:text-xs text-blue-400 mb-0.5 md:mb-1">Exercise</div>
+              <div className="text-lg md:text-2xl font-bold text-blue-400 font-mono">{formatTime(exerciseElapsedTime)}</div>
             </div>
           </div>
           {workoutPaused && (
-            <div className="mt-2 text-xs text-yellow-400 text-center font-semibold">
+            <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-yellow-400 text-center font-semibold">
               ⏸ PAUSED
             </div>
           )}
@@ -760,8 +760,8 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
       {/* Rest Timer */}
       {workoutStarted && restTimer !== null && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
-          <div className={`backdrop-blur-sm border-2 rounded-2xl px-8 py-6 transition-all ${
+        <div className="fixed top-24 md:top-20 left-1/2 transform -translate-x-1/2 z-50 w-[90vw] md:w-auto max-w-sm">
+          <div className={`backdrop-blur-sm border-2 rounded-xl md:rounded-2xl px-4 py-3 md:px-8 md:py-6 transition-all ${
             restTimer === 0 
               ? 'bg-green-500/20 border-green-500 animate-pulse' 
               : restTimer <= 10 
@@ -769,10 +769,10 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                 : 'bg-blue-500/20 border-blue-500'
           }`}>
             <div className="text-center">
-              <div className="text-xs font-semibold text-gray-300 mb-1">
+              <div className="text-[10px] md:text-xs font-semibold text-gray-300 mb-0.5 md:mb-1">
                 {restTimer === 0 ? '✓ REST COMPLETE' : 'REST TIME'}
               </div>
-              <div className={`text-6xl font-bold font-mono ${
+              <div className={`text-4xl md:text-6xl font-bold font-mono ${
                 restTimer === 0 
                   ? 'text-green-400' 
                   : restTimer <= 10 
@@ -781,33 +781,33 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
               }`}>
                 {formatTime(restTimer)}
               </div>
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1">
                 Recommended: {formatTime(recommendedRestTime || 90)}
               </div>
               {restTimer === 0 && (
-                <div className="text-sm text-green-400 font-semibold mt-2 animate-bounce">
+                <div className="text-xs md:text-sm text-green-400 font-semibold mt-1 md:mt-2 animate-bounce">
                   Ready for next set!
                 </div>
               )}
               
               {/* Rest Timer Controls */}
-              <div className="mt-4 space-y-2">
-                <div className="flex gap-2 justify-center">
+              <div className="mt-2 md:mt-4 space-y-1.5 md:space-y-2">
+                <div className="flex gap-1.5 md:gap-2 justify-center">
                   <button
                     onClick={() => setRestTimer(Math.max(0, restTimer - 15))}
-                    className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-all"
+                    className="px-2 md:px-3 py-1 md:py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xs md:text-sm font-medium transition-all"
                   >
                     -15s
                   </button>
                   <button
                     onClick={() => setRestTimer(restTimer + 15)}
-                    className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-all"
+                    className="px-2 md:px-3 py-1 md:py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xs md:text-sm font-medium transition-all"
                   >
                     +15s
                   </button>
                 </div>
                 
-                <div className="flex gap-2 justify-center">
+                <div className="flex gap-1 md:gap-2 justify-center">
                   {[60, 90, 120, 180].map(seconds => (
                     <button
                       key={seconds}
@@ -815,7 +815,7 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                         setRestTimer(seconds);
                         setRecommendedRestTime(seconds);
                       }}
-                      className="px-2 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 rounded text-xs font-medium transition-all"
+                      className="px-1.5 md:px-2 py-0.5 md:py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 rounded text-[10px] md:text-xs font-medium transition-all"
                     >
                       {seconds}s
                     </button>
@@ -825,7 +825,7 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
               
               <button
                 onClick={() => setRestTimer(null)}
-                className="mt-3 text-xs text-gray-400 hover:text-white underline"
+                className="mt-2 md:mt-3 text-[10px] md:text-xs text-gray-400 hover:text-white underline"
               >
                 Dismiss
               </button>
@@ -871,13 +871,13 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         const currentExercise = exercises[currentExerciseIndex];
         const prevPerformance = getPreviousPerformance(currentExercise.name);
         return (
-        <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 backdrop-blur-sm rounded-2xl p-8 border-2 border-blue-600">
-          <div className="text-center mb-6">
-            <div className="text-sm text-blue-400 mb-2">
+        <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-8 border-2 border-blue-600">
+          <div className="text-center mb-4 md:mb-6">
+            <div className="text-xs md:text-sm text-blue-400 mb-1 md:mb-2">
               Exercise {currentExerciseIndex + 1} of {exercises.length}
             </div>
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <h2 className="text-4xl font-bold text-white">
+            <div className="flex items-center justify-center gap-2 md:gap-3 mb-2 md:mb-4">
+              <h2 className="text-2xl md:text-4xl font-bold text-white">
                 {currentExercise.name}
               </h2>
               {isBodyweightExercise(exercises[currentExerciseIndex]) && 
@@ -894,19 +894,19 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                 </button>
               )}
             </div>
-            <div className="text-2xl text-gray-300">
+            <div className="text-lg md:text-2xl text-gray-300">
               Set {currentSetIndex + 1} of {currentExercise.sets.length}
             </div>
             
             {/* Previous Performance */}
             {prevPerformance && (
-              <div className="mt-3 inline-block bg-green-900/30 border border-green-700 rounded-lg px-4 py-2">
-                <div className="text-xs text-green-400 font-semibold mb-1">📈 LAST TIME</div>
-                <div className="text-sm text-white">
+              <div className="mt-2 md:mt-3 inline-block bg-green-900/30 border border-green-700 rounded-lg px-3 py-1.5 md:px-4 md:py-2">
+                <div className="text-[10px] md:text-xs text-green-400 font-semibold mb-0.5 md:mb-1">📈 LAST TIME</div>
+                <div className="text-xs md:text-sm text-white">
                   {prevPerformance.sets.length}x{prevPerformance.sets[0].reps}
                   {prevPerformance.sets[0].weight > 0 && ` @ ${prevPerformance.sets[0].weight}lbs`}
                   {currentExercise.sets[currentSetIndex].weight > prevPerformance.sets[0].weight && (
-                    <span className="ml-2 text-green-400 font-bold">→ {currentExercise.sets[currentSetIndex].weight}lbs 🔥</span>
+                    <span className="ml-1 md:ml-2 text-green-400 font-bold">→ {currentExercise.sets[currentSetIndex].weight}lbs 🔥</span>
                   )}
                 </div>
               </div>
@@ -914,9 +914,9 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             
             {/* Form Cues */}
             {currentExercise.formCues && currentExercise.formCues.length > 0 && (
-              <div className="mt-3 bg-blue-900/30 border border-blue-700 rounded-lg px-4 py-2.5">
-                <div className="text-xs text-blue-400 font-semibold mb-1.5">💡 FORM CUES</div>
-                <div className="text-sm text-gray-200 space-y-1">
+              <div className="mt-2 md:mt-3 bg-blue-900/30 border border-blue-700 rounded-lg px-3 py-2 md:px-4 md:py-2.5">
+                <div className="text-[10px] md:text-xs text-blue-400 font-semibold mb-1 md:mb-1.5">💡 FORM CUES</div>
+                <div className="text-xs md:text-sm text-gray-200 space-y-0.5 md:space-y-1">
                   {currentExercise.formCues.map((cue, idx) => (
                     <div key={idx}>• {cue}</div>
                   ))}
@@ -925,10 +925,10 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             )}
             
             {currentExercise.perSide && (
-              <div className="mt-4 inline-flex items-center gap-2 bg-purple-600/30 border border-purple-500 rounded-lg px-4 py-2">
-                <span className="text-sm text-purple-200">Per Side Exercise</span>
-                <div className="flex gap-2">
-                  <div className={`px-3 py-1 rounded ${
+              <div className="mt-2 md:mt-4 inline-flex items-center gap-1.5 md:gap-2 bg-purple-600/30 border border-purple-500 rounded-lg px-3 py-1.5 md:px-4 md:py-2">
+                <span className="text-xs md:text-sm text-purple-200">Per Side Exercise</span>
+                <div className="flex gap-1 md:gap-2">
+                  <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded text-xs md:text-sm ${
                     currentSide === 'left' 
                       ? 'bg-purple-600 text-white font-bold' 
                       : completedSides[`${currentExerciseIndex}-${currentSetIndex}-left`]
@@ -937,7 +937,7 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                   }`}>
                     ⬅️ Left
                   </div>
-                  <div className={`px-3 py-1 rounded ${
+                  <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded text-xs md:text-sm ${
                     currentSide === 'right' 
                       ? 'bg-purple-600 text-white font-bold' 
                       : completedSides[`${currentExerciseIndex}-${currentSetIndex}-right`]
@@ -951,12 +951,12 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             )}
           </div>
 
-          <div className="bg-gray-800/50 rounded-xl p-6 mb-6">
+          <div className="bg-gray-800/50 rounded-lg md:rounded-xl p-4 md:p-6 mb-4 md:mb-6">
             {/* Weight Selection - Hidden for bodyweight exercises */}
             {!isBodyweightExercise(exercises[currentExerciseIndex]) && (
-              <div className="mb-5">
+              <div className="mb-4 md:mb-5">
                 <label className="block text-xs font-medium text-gray-400 mb-2">Weight (lbs)</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5 md:gap-2">
                   {[-5, 0, 5].map((offset) => {
                     const currentWeight = exercises[currentExerciseIndex].sets[currentSetIndex].weight || 0;
                     const baseWeight = currentSetIndex > 0 
@@ -969,14 +969,14 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                       <button
                         key={offset}
                         onClick={() => updateSet(currentExerciseIndex, currentSetIndex, 'weight', weightOption)}
-                        className={`py-3 px-3 rounded-lg font-semibold transition-all ${
+                        className={`py-2 md:py-3 px-2 md:px-3 rounded-lg font-semibold transition-all ${
                           isSelected
                             ? 'bg-blue-600 text-white ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-800'
                             : 'bg-gray-700 text-gray-300 hover:bg-gray-600 active:scale-95'
                         }`}
                       >
-                        <div className="text-lg">{weightOption}</div>
-                        <div className="text-xs opacity-70 mt-0.5">
+                        <div className="text-base md:text-lg">{weightOption}</div>
+                        <div className="text-[10px] md:text-xs opacity-70 mt-0.5">
                           {offset === 0 ? 'same' : `${offset > 0 ? '+' : ''}${offset} lb`}
                         </div>
                       </button>
@@ -994,25 +994,25 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             )}
 
             {/* Reps Selection */}
-            <div className="mb-4">
+            <div className="mb-3 md:mb-4">
               <label className="block text-xs font-medium text-gray-400 mb-2">
                 {exercises[currentExerciseIndex].perSide ? `Reps (per ${currentSide} side)` : 'Reps'}
               </label>
-              <div className="flex items-center gap-3 bg-gray-700/50 rounded-lg p-2">
+              <div className="flex items-center gap-2 md:gap-3 bg-gray-700/50 rounded-lg p-2">
                 <button
                   onClick={() => {
                     const currentReps = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
                     updateSet(currentExerciseIndex, currentSetIndex, 'reps', Math.max(0, currentReps - 1));
                   }}
-                  className="w-10 h-10 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded-md font-bold text-lg transition-all active:scale-95"
+                  className="w-9 h-9 md:w-10 md:h-10 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded-md font-bold text-lg transition-all active:scale-95"
                 >
                   −
                 </button>
                 <div className="flex-1 text-center">
-                  <div className="text-3xl font-bold text-white">
+                  <div className="text-2xl md:text-3xl font-bold text-white">
                     {exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0}
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-[10px] md:text-xs text-gray-400">
                     {exercises[currentExerciseIndex].perSide 
                       ? `reps on ${currentSide}` 
                       : 'reps'}
@@ -1023,13 +1023,13 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                     const currentReps = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
                     updateSet(currentExerciseIndex, currentSetIndex, 'reps', currentReps + 1);
                   }}
-                  className="w-10 h-10 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded-md font-bold text-lg transition-all active:scale-95"
+                  className="w-9 h-9 md:w-10 md:h-10 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded-md font-bold text-lg transition-all active:scale-95"
                 >
                   +
                 </button>
               </div>
               {exercises[currentExerciseIndex].perSide && (
-                <div className="mt-2 text-xs text-purple-400 text-center">
+                <div className="mt-1.5 md:mt-2 text-[10px] md:text-xs text-purple-400 text-center">
                   💡 You'll do {exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0} reps on each side
                 </div>
               )}
@@ -1126,7 +1126,7 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
           <button
             onClick={handleNextSet}
-            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-6 px-8 rounded-xl transition-all shadow-lg shadow-green-900/50 text-xl"
+            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 md:py-6 px-6 md:px-8 rounded-xl transition-all shadow-lg shadow-green-900/50 text-base md:text-xl"
           >
             {exercises[currentExerciseIndex].perSide && currentSide === 'left'
               ? `✓ Complete ${currentSide.charAt(0).toUpperCase() + currentSide.slice(1)} Side → Switch to Right`
