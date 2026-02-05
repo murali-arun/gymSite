@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useCoach } from '../../../contexts/CoachContext';
 
 const BADGES = [
@@ -138,65 +139,114 @@ function Achievements({ user }) {
   return (
     <div className="space-y-6">
       {/* Streak Card */}
-      <div className="bg-gradient-to-r from-orange-900/30 to-red-900/30 backdrop-blur-sm rounded-2xl p-6 border border-orange-700">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-2xl font-bold text-white mb-1">🔥 Current Streak</h3>
-            <p className="text-gray-300 text-sm">Keep the momentum going!</p>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-orange-900/30 to-red-900/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-orange-700"
+      >
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <div className="text-4xl sm:text-5xl bg-gray-900/70 rounded-full w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
+              🔥
+            </div>
+            <div>
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">Current Streak</h3>
+              <p className="text-gray-300 text-xs sm:text-sm">Keep the momentum going!</p>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-5xl font-bold text-orange-400">{streak}</div>
-            <div className="text-sm text-gray-400">days</div>
+          <div className="text-center bg-gray-900/50 rounded-xl px-6 py-3">
+            <div className="text-4xl sm:text-5xl font-bold text-orange-400">{streak}</div>
+            <div className="text-xs sm:text-sm text-gray-400">days</div>
           </div>
         </div>
         
         {streak > 0 && (
-          <div className="mt-4 p-3 bg-gray-900/50 rounded-lg">
-            <p className="text-sm text-gray-300">
-              {streak >= 7 ? `Amazing! ${streak} days strong! 💪` : 
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-4 p-3 bg-gray-900/50 rounded-lg flex items-center gap-2"
+          >
+            <span className="text-2xl bg-gray-800/70 rounded-full w-8 h-8 flex items-center justify-center shrink-0">
+              💪
+            </span>
+            <p className="text-xs sm:text-sm text-gray-300">
+              {streak >= 7 ? `Amazing! ${streak} days strong!` : 
                streak >= 3 ? `Great work! ${7 - streak} days until week warrior!` :
                `${3 - streak} more day${3 - streak > 1 ? 's' : ''} to build a solid habit!`}
             </p>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* Earned Badges */}
       {earnedBadges.length > 0 && (
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-          <h3 className="text-xl font-bold text-white mb-4">🏆 Achievements ({earnedBadges.length}/{BADGES.length})</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {earnedBadges.map(badge => (
-              <div
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl sm:text-3xl bg-gray-900/70 rounded-full w-10 h-10 flex items-center justify-center">
+              🏆
+            </span>
+            <h3 className="text-lg sm:text-xl font-bold text-white">
+              Achievements ({earnedBadges.length}/{BADGES.length})
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {earnedBadges.map((badge, index) => (
+              <motion.div
                 key={badge.id}
-                className="bg-gradient-to-br from-yellow-900/30 to-yellow-700/30 border border-yellow-600 rounded-xl p-4 text-center"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 + index * 0.05 }}
+                className="bg-gradient-to-br from-yellow-900/30 to-yellow-700/30 border border-yellow-600 rounded-xl p-3 sm:p-4 text-center hover:scale-105 transition-transform"
               >
-                <div className="text-4xl mb-2">{badge.icon}</div>
-                <div className="font-bold text-white text-sm mb-1">{badge.name}</div>
-                <div className="text-xs text-gray-400">{badge.description}</div>
-              </div>
+                <div className="text-3xl sm:text-4xl mb-2 bg-gray-900/70 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto">
+                  {badge.icon}
+                </div>
+                <div className="font-bold text-white text-xs sm:text-sm mb-1">{badge.name}</div>
+                <div className="text-xs text-gray-400 line-clamp-2">{badge.description}</div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Locked Badges */}
       {lockedBadges.length > 0 && (
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-          <h3 className="text-xl font-bold text-white mb-4">🔒 Locked Achievements</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {lockedBadges.map(badge => (
-              <div
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl sm:text-3xl bg-gray-900/70 rounded-full w-10 h-10 flex items-center justify-center">
+              🔒
+            </span>
+            <h3 className="text-lg sm:text-xl font-bold text-white">Locked Achievements</h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {lockedBadges.map((badge, index) => (
+              <motion.div
                 key={badge.id}
-                className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-center opacity-60"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 + index * 0.05 }}
+                className="bg-gray-900/50 border border-gray-700 rounded-xl p-3 sm:p-4 text-center opacity-60 hover:opacity-80 transition-opacity"
               >
-                <div className="text-4xl mb-2 grayscale">{badge.icon}</div>
-                <div className="font-bold text-gray-400 text-sm mb-1">{badge.name}</div>
-                <div className="text-xs text-gray-500">{badge.description}</div>
-              </div>
+                <div className="text-3xl sm:text-4xl mb-2 grayscale bg-gray-800/70 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto">
+                  {badge.icon}
+                </div>
+                <div className="font-bold text-gray-400 text-xs sm:text-sm mb-1">{badge.name}</div>
+                <div className="text-xs text-gray-500 line-clamp-2">{badge.description}</div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

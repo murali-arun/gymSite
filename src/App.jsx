@@ -30,6 +30,7 @@ function AppContent() {
   const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const [showCoachSelector, setShowCoachSelector] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -162,13 +163,20 @@ function AppContent() {
       <header className="glass sticky top-0 z-40 animate-fade-in">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-400 via-accent-cyan to-accent-purple bg-clip-text text-transparent">
-                💪 FitFlow AI
-              </h1>
-              <p className="text-sm text-gray-400">Training with {user.name}</p>
+            <div className="flex items-center gap-3">
+              <div className="text-3xl sm:text-4xl bg-gray-900/70 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
+                💪
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary-400 via-accent-cyan to-accent-purple bg-clip-text text-transparent">
+                  FitFlow AI
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-400">Training with {user.name}</p>
+              </div>
             </div>
-            <div className="flex gap-2">
+            
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex gap-2">
               <button
                 onClick={() => setView('home')}
                 className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
@@ -233,7 +241,91 @@ function AppContent() {
                 Switch
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="lg:hidden p-2 rounded-lg glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {showMobileMenu ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
+
+          {/* Mobile Dropdown Menu */}
+          <AnimatePresence>
+            {showMobileMenu && (
+              <div className="lg:hidden mt-4 space-y-2 animate-fade-in">
+                <button
+                  onClick={() => { setView('home'); setShowMobileMenu(false); }}
+                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                    view === 'home'
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                      : 'glass-strong hover:bg-white/15 text-gray-300'
+                  }`}
+                >
+                  🏠 Home
+                </button>
+                <button
+                  onClick={() => { setView('dashboard'); setShowMobileMenu(false); }}
+                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                    view === 'dashboard'
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                      : 'glass-strong hover:bg-white/15 text-gray-300'
+                  }`}
+                >
+                  📊 Stats
+                </button>
+                <button
+                  onClick={() => { setShowCoachSelector(true); setShowMobileMenu(false); }}
+                  className="w-full px-4 py-3 rounded-lg font-medium glass-strong hover:bg-white/15 text-accent-purple transition-all duration-300 text-left"
+                >
+                  🎯 Coach
+                </button>
+                <button
+                  onClick={() => { setView('achievements'); setShowMobileMenu(false); }}
+                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                    view === 'achievements'
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                      : 'glass-strong hover:bg-white/15 text-gray-300'
+                  }`}
+                >
+                  🏆 Badges
+                </button>
+                <button
+                  onClick={() => { setView('progress'); setShowMobileMenu(false); }}
+                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                    view === 'progress'
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                      : 'glass-strong hover:bg-white/15 text-gray-300'
+                  }`}
+                >
+                  📈 Progress
+                </button>
+                <button
+                  onClick={() => { setView('history'); setShowMobileMenu(false); }}
+                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                    view === 'history'
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                      : 'glass-strong hover:bg-white/15 text-gray-300'
+                  }`}
+                >
+                  📜 History
+                </button>
+                <button
+                  onClick={() => { handleLogout(); setShowMobileMenu(false); }}
+                  className="w-full px-4 py-3 rounded-lg font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white text-left"
+                >
+                  🔄 Switch User
+                </button>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       </header>
 
