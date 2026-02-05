@@ -266,6 +266,7 @@ For STRENGTH workouts:
       "name": "Exercise Name",
       "perSide": false,
       "recommendedRest": 90,
+      "formCues": ["Keep chest up", "Drive through heels"],
       "sets": [
         {"weight": 0, "reps": 0, "completed": false},
         {"weight": 0, "reps": 0, "completed": false}
@@ -282,6 +283,12 @@ RECOMMENDED REST TIMES:
 - Circuit training or fat loss focus: 30-60 seconds
 - Between different exercises: 120 seconds
 Include "recommendedRest" (in seconds) for each exercise based on intensity and goals.
+
+FORM CUES:
+- Include 1-2 critical form cues for each exercise in the "formCues" array
+- Focus on the most important technical points (e.g., "Keep chest up", "Drive through heels", "Squeeze at the top")
+- Keep cues short, actionable, and specific to the exercise
+- These help users maintain proper form during execution
 
 IMPORTANT - BILATERAL/UNILATERAL EXERCISES:
 Some exercises are performed on each side independently (bilateral/unilateral). Set "perSide": true for these:
@@ -702,6 +709,7 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown):
           "name": "Barbell Bench Press",
           "perSide": false,
           "recommendedRest": 120,
+          "formCues": ["Retract shoulder blades", "Lower to mid-chest"],
           "sets": [
             {"weight": 135, "reps": 8, "completed": false},
             {"weight": 135, "reps": 8, "completed": false},
@@ -738,7 +746,8 @@ IMPORTANT:
 - Include recommendedRest (in seconds) for each strength exercise:
   * Heavy compound: 120-180s
   * Moderate compound: 90-120s
-  * Isolation: 60-90s`
+  * Isolation: 60-90s
+- Include 1-2 formCues per exercise for proper technique`
     }
   ];
 
