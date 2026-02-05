@@ -265,6 +265,7 @@ For STRENGTH workouts:
     {
       "name": "Exercise Name",
       "perSide": false,
+      "recommendedRest": 90,
       "sets": [
         {"weight": 0, "reps": 0, "completed": false},
         {"weight": 0, "reps": 0, "completed": false}
@@ -273,6 +274,14 @@ For STRENGTH workouts:
   ],
   "summary": "Brief explanation IN YOUR COACHING VOICE"
 }
+
+RECOMMENDED REST TIMES:
+- Heavy compound lifts (squat, deadlift, bench): 120-180 seconds between sets
+- Moderate compound lifts (rows, overhead press): 90-120 seconds
+- Isolation exercises (curls, lateral raises): 60-90 seconds
+- Circuit training or fat loss focus: 30-60 seconds
+- Between different exercises: 120 seconds
+Include "recommendedRest" (in seconds) for each exercise based on intensity and goals.
 
 IMPORTANT - BILATERAL/UNILATERAL EXERCISES:
 Some exercises are performed on each side independently (bilateral/unilateral). Set "perSide": true for these:
@@ -692,6 +701,7 @@ RESPONSE FORMAT - Return ONLY valid JSON (no markdown):
         {
           "name": "Barbell Bench Press",
           "perSide": false,
+          "recommendedRest": 120,
           "sets": [
             {"weight": 135, "reps": 8, "completed": false},
             {"weight": 135, "reps": 8, "completed": false},
@@ -724,7 +734,11 @@ IMPORTANT:
 - Use realistic weights based on user history
 - Apply progressive overload from their recent workouts
 - Include specific exercise names (not generic)
-- Set perSide=true for unilateral exercises`
+- Set perSide=true for unilateral exercises
+- Include recommendedRest (in seconds) for each strength exercise:
+  * Heavy compound: 120-180s
+  * Moderate compound: 90-120s
+  * Isolation: 60-90s`
     }
   ];
 
