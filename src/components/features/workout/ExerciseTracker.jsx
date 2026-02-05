@@ -18,8 +18,11 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   const [exerciseStartTime, setExerciseStartTime] = useState(null);
   const [exerciseElapsedTime, setExerciseElapsedTime] = useState(0);
   const [setTimestamps, setSetTimestamps] = useState([]);
+  const [restTimer, setRestTimer] = useState(null);
+  const [recommendedRestTime, setRecommendedRestTime] = useState(null);
   const timerRef = useRef(null);
   const exerciseTimerRef = useRef(null);
+  const restTimerRef = useRef(null);
   
   // Pre-workout status
   const [showPreWorkout, setShowPreWorkout] = useState(false);
@@ -111,6 +114,28 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     };
   }, [exerciseStartTime, workoutStarted, countdown]);
 
+  // Rest timer countdown effect
+  useEffect(() => {
+    if (restTimer !== null && restTimer > 0) {
+      restTimerRef.current = setInterval(() => {
+        setRestTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(restTimerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else if (restTimerRef.current) {
+      clearInterval(restTimerRef.current);
+    }
+    return () => {
+      if (restTimerRef.current) {
+        clearInterval(restTimerRef.current);
+      }
+    };
+  }, [restTimer]);
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -177,8 +202,12 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
     // Move to next set or exercise
     if (currentSetIndex < currentExercise.sets.length - 1) {
-      // Next set in same exercise
+      // Next set in same exercise - start rest timer
       setCurrentSetIndex(currentSetIndex + 1);
+      // Get recommended rest time from exercise or use defaults
+      const restTime = currentExercise.recommendedRest || 90; // Default 90s
+      setRecommendedRestTime(restTime);
+      setRestTimer(restTime);
     } else {
       // Move to next exercise
       if (currentExerciseIndex < exercises.length - 1) {
@@ -187,9 +216,15 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         // Reset exercise timer
         setExerciseStartTime(Date.now());
         setExerciseElapsedTime(0);
+        // Start rest timer for transition
+        const nextExercise = exercises[currentExerciseIndex + 1];
+        const restTime = nextExercise.recommendedRest || 120; // Longer rest between exercises
+        setRecommendedRestTime(restTime);
+        setRestTimer(restTime);
       } else {
         // Workout complete
         setWorkoutStarted(false);
+        setRestTimer(null);
       }
     }
   };
@@ -650,6 +685,48 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             <div className="border-l border-gray-600 pl-4">
               <div className="text-xs text-blue-400 mb-1">Exercise Time</div>
               <div className="text-2xl font-bold text-blue-400 font-mono">{formatTime(exerciseElapsedTime)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rest Timer */}
+      {workoutStarted && restTimer !== null && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
+          <div className={`backdrop-blur-sm border-2 rounded-2xl px-8 py-6 transition-all ${
+            restTimer === 0 
+              ? 'bg-green-500/20 border-green-500 animate-pulse' 
+              : restTimer <= 10 
+                ? 'bg-yellow-500/20 border-yellow-500' 
+                : 'bg-blue-500/20 border-blue-500'
+          }`}>
+            <div className="text-center">
+              <div className="text-xs font-semibold text-gray-300 mb-1">
+                {restTimer === 0 ? '✓ REST COMPLETE' : 'REST TIME'}
+              </div>
+              <div className={`text-6xl font-bold font-mono ${
+                restTimer === 0 
+                  ? 'text-green-400' 
+                  : restTimer <= 10 
+                    ? 'text-yellow-400' 
+                    : 'text-blue-400'
+              }`}>
+                {formatTime(restTimer)}
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                Recommended: {formatTime(recommendedRestTime || 90)}
+              </div>
+              {restTimer === 0 && (
+                <div className="text-sm text-green-400 font-semibold mt-2 animate-bounce">
+                  Ready for next set!
+                </div>
+              )}
+              <button
+                onClick={() => setRestTimer(null)}
+                className="mt-3 text-xs text-gray-400 hover:text-white underline"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         </div>

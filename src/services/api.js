@@ -576,9 +576,18 @@ export async function sendWorkoutFeedback(user, completedWorkout) {
         totalSets: e.sets.length,
         sets: e.sets.filter(s => s.completed).map(s => ({
           weight: s.weight,
-          reps: s.reps
+          reps: s.reps,
+          rpe: s.rpe || null,
+          rir: s.rir !== null && s.rir !== undefined ? s.rir : null,
+          toFailure: s.toFailure || false,
+          formBreakdown: s.formBreakdown || false,
+          pain: s.pain || false,
+          notes: s.notes || ''
         }))
-      }))
+      })),
+      preWorkout: completedWorkout.preWorkout || null,
+      postWorkout: completedWorkout.postWorkout || null,
+      totalDuration: completedWorkout.totalDuration || null
     };
   }
 
@@ -591,7 +600,15 @@ export async function sendWorkoutFeedback(user, completedWorkout) {
 FEEDBACK GUIDELINES:
 - Acknowledge their effort and specific accomplishments (e.g., "Great work hitting 3x8 on squats at 185lbs")
 - Identify progressive overload opportunities (e.g., "Next time, try adding 5lbs" or "Aim for 9 reps on the first set")
-- Note any concerns (incomplete sets, form issues if mentioned, excessive fatigue)
+- Note any concerns based on set details:
+  * RPE (Rate of Perceived Exertion) above 9 consistently may indicate too heavy
+  * RIR (Reps in Reserve) of 0 on every set may lead to burnout
+  * "toFailure" sets are great occasionally but not sustainable every workout
+  * "formBreakdown" indicates weight is too heavy - suggest reducing load
+  * "pain" is a red flag - address immediately and suggest rest/assessment
+  * Set notes provide valuable context about technique, feeling, etc.
+- Consider pre-workout state (energy, sleep, stress, soreness) when evaluating performance
+- Use post-workout feedback (difficulty rating, feeling, predicted soreness) to gauge if programming is appropriate
 - Consider recovery needs (if high volume/intensity, suggest lighter next session)
 - Connect to their goals (strength, hypertrophy, endurance, fat loss)
 - Be genuinely motivating but realistic - celebrate wins, address struggles constructively
