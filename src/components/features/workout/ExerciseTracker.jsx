@@ -15,8 +15,11 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [workoutStartTime, setWorkoutStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [exerciseStartTime, setExerciseStartTime] = useState(null);
+  const [exerciseElapsedTime, setExerciseElapsedTime] = useState(0);
   const [setTimestamps, setSetTimestamps] = useState([]);
   const timerRef = useRef(null);
+  const exerciseTimerRef = useRef(null);
   
   // Pre-workout status
   const [showPreWorkout, setShowPreWorkout] = useState(false);
@@ -90,6 +93,24 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     };
   }, [workoutStartTime, workoutStarted, countdown]);
 
+  // Exercise timer effect
+  useEffect(() => {
+    if (exerciseStartTime && workoutStarted && countdown === null) {
+      exerciseTimerRef.current = setInterval(() => {
+        setExerciseElapsedTime(Math.floor((Date.now() - exerciseStartTime) / 1000));
+      }, 1000);
+    } else {
+      if (exerciseTimerRef.current) {
+        clearInterval(exerciseTimerRef.current);
+      }
+    }
+    return () => {
+      if (exerciseTimerRef.current) {
+        clearInterval(exerciseTimerRef.current);
+      }
+    };
+  }, [exerciseStartTime, workoutStarted, countdown]);
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -111,7 +132,9 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
-          setWorkoutStartTime(Date.now());
+          const now = Date.now();
+          setWorkoutStartTime(now);
+          setExerciseStartTime(now);
           setWorkoutStarted(true);
           return null;
         }
@@ -161,6 +184,9 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       if (currentExerciseIndex < exercises.length - 1) {
         setCurrentExerciseIndex(currentExerciseIndex + 1);
         setCurrentSetIndex(0);
+        // Reset exercise timer
+        setExerciseStartTime(Date.now());
+        setExerciseElapsedTime(0);
       } else {
         // Workout complete
         setWorkoutStarted(false);
@@ -616,8 +642,16 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       {/* Timer Display */}
       {workoutStarted && countdown === null && (
         <div className="fixed top-20 right-4 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg px-4 py-2 z-40">
-          <div className="text-xs text-gray-400 mb-1">Elapsed Time</div>
-          <div className="text-2xl font-bold text-white font-mono">{formatTime(elapsedTime)}</div>
+          <div className="flex gap-4">
+            <div>
+              <div className="text-xs text-gray-400 mb-1">Total Time</div>
+              <div className="text-2xl font-bold text-white font-mono">{formatTime(elapsedTime)}</div>
+            </div>
+            <div className="border-l border-gray-600 pl-4">
+              <div className="text-xs text-blue-400 mb-1">Exercise Time</div>
+              <div className="text-2xl font-bold text-blue-400 font-mono">{formatTime(exerciseElapsedTime)}</div>
+            </div>
+          </div>
         </div>
       )}
 
