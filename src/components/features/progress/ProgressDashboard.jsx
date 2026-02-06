@@ -106,42 +106,62 @@ function ProgressDashboard({ user }) {
   const exercises = Object.keys(stats.exerciseMap).sort();
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-blue-900/30 backdrop-blur-sm rounded-xl p-4 border border-blue-700">
-          <div className="text-3xl font-bold text-blue-400">{stats.totalWorkouts}</div>
-          <div className="text-sm text-gray-400">Total Workouts</div>
-        </div>
-        
-        <div className="bg-purple-900/30 backdrop-blur-sm rounded-xl p-4 border border-purple-700">
-          <div className="text-3xl font-bold text-purple-400">
-            {(stats.totalVolume / 1000).toFixed(0)}k
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+        {/* Total Workouts */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-500/30 hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent"></div>
+          <div className="relative">
+            <div className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent">
+              {stats.totalWorkouts}
+            </div>
+            <div className="text-xs uppercase tracking-wider text-gray-400 mt-2">Total Workouts</div>
           </div>
-          <div className="text-sm text-gray-400">Pounds Lifted</div>
         </div>
         
-        <div className="bg-green-900/30 backdrop-blur-sm rounded-xl p-4 border border-green-700">
-          <div className="text-3xl font-bold text-green-400">{stats.uniqueExercises}</div>
-          <div className="text-sm text-gray-400">Exercises Done</div>
-        </div>
-        
-        <div className="bg-orange-900/30 backdrop-blur-sm rounded-xl p-4 border border-orange-700">
-          <div className="text-3xl font-bold text-orange-400">
-            {Math.floor(stats.avgWorkoutTime / 60)}m
+        {/* Pounds Lifted */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-orange-900/40 to-orange-800/20 backdrop-blur-sm rounded-2xl p-6 border border-orange-500/30 hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent"></div>
+          <div className="relative">
+            <div className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
+              {(stats.totalVolume / 1000).toFixed(0)}k
+            </div>
+            <div className="text-xs uppercase tracking-wider text-gray-400 mt-2">Pounds Lifted</div>
           </div>
-          <div className="text-sm text-gray-400">Avg Duration</div>
+        </div>
+        
+        {/* Exercises Done */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-green-900/40 to-green-800/20 backdrop-blur-sm rounded-2xl p-6 border border-green-500/30 hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-tr from-green-500/10 to-transparent"></div>
+          <div className="relative">
+            <div className="text-4xl font-bold bg-gradient-to-r from-green-400 to-green-300 bg-clip-text text-transparent">
+              {stats.uniqueExercises}
+            </div>
+            <div className="text-xs uppercase tracking-wider text-gray-400 mt-2">Exercises Done</div>
+          </div>
+        </div>
+        
+        {/* Avg Duration */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-800/20 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/30 hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/10 to-transparent"></div>
+          <div className="relative">
+            <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
+              {Math.floor(stats.avgWorkoutTime / 60)}m
+            </div>
+            <div className="text-xs uppercase tracking-wider text-gray-400 mt-2">Avg Duration</div>
+          </div>
         </div>
       </div>
       
       {/* Activity Calendar Heatmap */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-        <h3 className="text-xl font-bold text-white mb-4">📅 Last 30 Days</h3>
+      <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50 shadow-2xl">
+        <h3 className="text-2xl font-bold text-white mb-6 tracking-tight">📅 Last 30 Days</h3>
         
         {/* Day of week labels */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName) => (
-            <div key={dayName} className="text-center text-xs font-medium text-gray-400">
+            <div key={dayName} className="text-center text-xs font-semibold text-gray-400">
               {dayName}
             </div>
           ))}
@@ -152,11 +172,14 @@ function ProgressDashboard({ user }) {
           {last30Days.map((day, idx) => (
             <div
               key={idx}
-              className={`aspect-square rounded ${
-                day.hasWorkout 
-                  ? 'bg-green-600 hover:bg-green-500' 
-                  : 'bg-gray-700 hover:bg-gray-600'
-              } flex items-center justify-center text-xs text-white cursor-pointer transition-all`}
+              className={`
+                aspect-square rounded-lg transition-all duration-200
+                ${day.hasWorkout 
+                  ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30 hover:scale-110 hover:shadow-2xl hover:shadow-green-500/50 hover:z-10' 
+                  : 'bg-gray-800/50 border border-gray-700/50 hover:bg-gray-700/50 hover:border-gray-600'
+                }
+                flex items-center justify-center text-xs font-medium text-white cursor-pointer
+              `}
               title={`${day.date}${day.hasWorkout ? ' ✓' : ''}`}
             >
               {day.day}
@@ -164,19 +187,19 @@ function ProgressDashboard({ user }) {
           ))}
         </div>
         
-        <div className="mt-4 flex items-center gap-4 text-xs text-gray-400">
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-gray-700 rounded"></div> Rest day
+        <div className="mt-6 flex items-center gap-6 text-xs text-gray-400">
+          <span className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-gray-800/50 border border-gray-700/50 rounded"></div> Rest day
           </span>
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-green-600 rounded"></div> Workout
+          <span className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded shadow-md shadow-green-500/30"></div> Workout
           </span>
         </div>
       </div>
       
       {/* Personal Records */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-        <h3 className="text-xl font-bold text-white mb-4">💪 Personal Records</h3>
+      <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50 shadow-2xl">
+        <h3 className="text-2xl font-bold text-white mb-6 tracking-tight">💪 Personal Records</h3>
         
         {exercises.length === 0 ? (
           <p className="text-gray-400 text-center py-8">Complete some workouts to see your PRs!</p>
@@ -190,7 +213,7 @@ function ProgressDashboard({ user }) {
               return (
               <div
                 key={name}
-                className="bg-gray-900/50 rounded-lg p-4 hover:bg-gray-900/70 transition-all cursor-pointer"
+                className="bg-gray-900/50 rounded-xl p-4 hover:bg-gray-900/70 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border border-gray-800 hover:border-gray-700"
                 onClick={() => setSelectedExercise(selectedExercise === name ? null : name)}
               >
                 <div className="flex justify-between items-center">
@@ -226,8 +249,8 @@ function ProgressDashboard({ user }) {
       
       {/* Volume Over Time */}
       {user?.workouts?.length >= 3 && (
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-          <h3 className="text-xl font-bold text-white mb-4">📈 Volume Trend</h3>
+        <div className="bg-gray-800/30 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50 shadow-2xl">
+          <h3 className="text-2xl font-bold text-white mb-6 tracking-tight">📈 Volume Trend</h3>
           <div className="h-48 flex items-end justify-between gap-1">
             {user.workouts.slice(-10).map((workout, idx) => {
               const volume = workout.exercises?.reduce((sum, ex) => {

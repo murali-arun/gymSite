@@ -329,27 +329,36 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
       {/* Stats Card */}
       {user.workouts.length > 0 && (
         <Container variant="default" padding="md">
-          <h3 className="text-lg font-semibold text-white mb-4">Your Progress</h3>
+          <h3 className="text-lg font-semibold text-white mb-4 tracking-tight">📊 Your Progress</h3>
           <Grid cols={3} gap="md">
-            <div className="bg-gray-700/50 rounded-lg p-4">
-              <div className="text-3xl font-bold text-blue-400">{user.workouts.length}</div>
-              <div className="text-sm text-gray-400">Total Workouts</div>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-4">
-              <div className="text-3xl font-bold text-green-400">
-                {user.workouts[0]?.date === new Date().toISOString().split('T')[0] ? '✓' : '-'}
+            <div className="relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/30 hover:-translate-y-1 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent"></div>
+              <div className="relative">
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent">{user.workouts.length}</div>
+                <div className="text-xs uppercase tracking-wider text-gray-400 mt-1">Total Workouts</div>
               </div>
-              <div className="text-sm text-gray-400">Today's Status</div>
             </div>
-            <div className="glass-strong rounded-lg p-4 border border-green-500/30">
-              <div className="flex items-center gap-1 mb-1">
-                <span className="text-2xl font-bold text-green-400">💰</span>
-                <div className="text-xs text-green-400 font-semibold">Cost Savings</div>
+            <div className="relative overflow-hidden bg-gradient-to-br from-green-900/40 to-green-800/20 backdrop-blur-sm rounded-2xl p-4 border border-green-500/30 hover:-translate-y-1 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-tr from-green-500/10 to-transparent"></div>
+              <div className="relative">
+                <div className="text-3xl font-bold bg-gradient-to-r from-green-400 to-green-300 bg-clip-text text-transparent">
+                  {user.workouts[0]?.date === new Date().toISOString().split('T')[0] ? '✓' : '-'}
+                </div>
+                <div className="text-xs uppercase tracking-wider text-gray-400 mt-1">Today's Status</div>
               </div>
-              <div className="text-xs text-gray-400">
-                {remainingWorkouts > 0 
-                  ? `$${(remainingWorkouts * 1.25).toFixed(2)} saved with plan`
-                  : 'Use multi-day plans'}
+            </div>
+            <div className="relative overflow-hidden bg-gradient-to-br from-emerald-900/40 to-emerald-800/20 backdrop-blur-sm rounded-2xl p-4 border border-emerald-500/30 hover:-translate-y-1 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 to-transparent"></div>
+              <div className="relative">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-2xl font-bold">💰</span>
+                  <div className="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Savings</div>
+                </div>
+                <div className="text-xs text-gray-400">
+                  {remainingWorkouts > 0 
+                    ? `$${(remainingWorkouts * 1.25).toFixed(2)} saved`
+                    : 'Use multi-day plans'}
+                </div>
               </div>
             </div>
           </Grid>

@@ -126,19 +126,21 @@ export const effects = {
 // Component variants
 export const variants = {
   button: {
-    primary: 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg shadow-blue-900/50',
-    secondary: 'bg-gray-700 hover:bg-gray-600 text-white font-medium',
-    ghost: 'bg-transparent hover:bg-gray-700 text-gray-300',
-    danger: 'bg-red-600 hover:bg-red-700 text-white font-semibold',
-    success: 'bg-green-600 hover:bg-green-700 text-white font-semibold',
-    outline: 'border-2 border-gray-600 hover:border-gray-500 text-white bg-transparent'
+    primary: 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg shadow-blue-900/50 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/50 active:scale-95 transition-all',
+    secondary: 'bg-gray-700 hover:bg-gray-600 text-white font-medium hover:scale-105 active:scale-95 transition-all',
+    ghost: 'bg-transparent hover:bg-gray-700 text-gray-300 hover:scale-105 active:scale-95 transition-all',
+    danger: 'bg-red-600 hover:bg-red-700 text-white font-semibold hover:scale-105 hover:shadow-xl hover:shadow-red-500/50 active:scale-95 transition-all',
+    success: 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 text-white font-semibold shadow-lg shadow-green-900/50 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/50 active:scale-95 transition-all',
+    outline: 'border-2 border-gray-600 hover:border-gray-500 text-white bg-transparent hover:scale-105 active:scale-95 transition-all',
+    energy: 'bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white font-bold shadow-xl shadow-orange-900/50 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/50 active:scale-95 transition-all'
   },
   
   card: {
-    default: 'bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700',
-    elevated: 'bg-gray-800/95 backdrop-blur-xl rounded-2xl border border-gray-700 shadow-2xl',
+    default: 'bg-gray-800/30 backdrop-blur-xl rounded-2xl border border-gray-700/50 shadow-2xl shadow-black/20 hover:shadow-green-500/10 transition-all',
+    elevated: 'bg-gray-800/95 backdrop-blur-xl rounded-2xl border border-gray-700 shadow-2xl hover:-translate-y-1 transition-all',
     flat: 'bg-gray-800 rounded-2xl border border-gray-700',
-    glass: 'bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10'
+    glass: 'bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-2xl rounded-2xl border border-white/20 shadow-2xl',
+    active: 'bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-2xl rounded-2xl border border-green-500/30 shadow-2xl shadow-green-500/20'
   },
   
   modal: {
@@ -203,7 +205,18 @@ export const gradients = {
   secondary: 'bg-gradient-to-r from-purple-600 to-blue-600',
   success: 'bg-gradient-to-br from-green-600 to-green-700',
   danger: 'bg-gradient-to-br from-red-600 to-red-700',
-  page: 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+  page: 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900',
+  // Fitness-themed vibrant gradients
+  energy: 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500',
+  intensity: 'bg-gradient-to-r from-orange-500 via-red-500 to-pink-500',
+  power: 'bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600',
+  achievement: 'bg-gradient-to-br from-yellow-500 to-amber-600',
+  stat: {
+    volume: 'bg-gradient-to-br from-orange-900/40 to-orange-800/20',
+    streak: 'bg-gradient-to-br from-green-900/40 to-green-800/20',
+    duration: 'bg-gradient-to-br from-blue-900/40 to-blue-800/20',
+    pr: 'bg-gradient-to-br from-purple-900/40 to-purple-800/20'
+  }
 };
 
 // Layout utilities

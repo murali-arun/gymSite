@@ -179,64 +179,64 @@ function AppContent() {
             <div className="hidden lg:flex gap-2">
               <button
                 onClick={() => setView('home')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
                   view === 'home'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                    : 'glass-strong hover:bg-white/15 text-gray-300'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
                 }`}
               >
                 Home
               </button>
               <button
                 onClick={() => setView('dashboard')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
                   view === 'dashboard'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                    : 'glass-strong hover:bg-white/15 text-gray-300'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
                 }`}
               >
                 📊 Stats
               </button>
               <button
                 onClick={() => setShowCoachSelector(true)}
-                className="px-4 py-2 rounded-lg font-medium glass-strong hover:bg-white/15 text-accent-purple transition-all duration-300 hover:scale-105"
+                className="px-4 py-2 rounded-full font-medium glass-strong hover:bg-white/15 text-accent-purple transition-all duration-300 hover:scale-105 active:scale-95"
                 title="Choose Your Coach"
               >
                 🎯 Coach
               </button>
               <button
                 onClick={() => setView('achievements')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
                   view === 'achievements'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                    : 'glass-strong hover:bg-white/15 text-gray-300'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
                 }`}
               >
                 🏆 Badges
               </button>
               <button
                 onClick={() => setView('progress')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
                   view === 'progress'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                    : 'glass-strong hover:bg-white/15 text-gray-300'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
                 }`}
               >
                 Progress
               </button>
               <button
                 onClick={() => setView('history')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
                   view === 'history'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                    : 'glass-strong hover:bg-white/15 text-gray-300'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
                 }`}
               >
                 History
               </button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 rounded-lg font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white"
+                className="px-4 py-2 rounded-full font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white hover:scale-105 active:scale-95"
               >
                 Switch
               </button>
@@ -245,7 +245,7 @@ function AppContent() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="lg:hidden p-2 rounded-lg glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300"
+              className="lg:hidden p-2 rounded-full glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:scale-110 active:scale-95"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {showMobileMenu ? (
@@ -260,10 +260,10 @@ function AppContent() {
           {/* Mobile Dropdown Menu */}
           <AnimatePresence>
             {showMobileMenu && (
-              <div className="lg:hidden mt-4 space-y-2 animate-fade-in">
+              <div className="lg:hidden mt-4 space-y-2 animate-slide-up">
                 <button
                   onClick={() => { setView('home'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
                     view === 'home'
                       ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
                       : 'glass-strong hover:bg-white/15 text-gray-300'
@@ -273,7 +273,7 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => { setView('dashboard'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
                     view === 'dashboard'
                       ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
                       : 'glass-strong hover:bg-white/15 text-gray-300'
@@ -283,13 +283,13 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => { setShowCoachSelector(true); setShowMobileMenu(false); }}
-                  className="w-full px-4 py-3 rounded-lg font-medium glass-strong hover:bg-white/15 text-accent-purple transition-all duration-300 text-left"
+                  className="w-full px-4 py-3 rounded-2xl font-medium glass-strong hover:bg-white/15 text-accent-purple transition-all duration-300 text-left active:scale-98"
                 >
                   🎯 Coach
                 </button>
                 <button
                   onClick={() => { setView('achievements'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
                     view === 'achievements'
                       ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
                       : 'glass-strong hover:bg-white/15 text-gray-300'
@@ -299,7 +299,7 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => { setView('progress'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
                     view === 'progress'
                       ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
                       : 'glass-strong hover:bg-white/15 text-gray-300'
@@ -309,7 +309,7 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => { setView('history'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 text-left ${
+                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
                     view === 'history'
                       ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
                       : 'glass-strong hover:bg-white/15 text-gray-300'
@@ -319,7 +319,7 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => { handleLogout(); setShowMobileMenu(false); }}
-                  className="w-full px-4 py-3 rounded-lg font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white text-left"
+                  className="w-full px-4 py-3 rounded-2xl font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white text-left active:scale-98"
                 >
                   🔄 Switch User
                 </button>
@@ -343,13 +343,13 @@ function AppContent() {
               <div className="mt-6">
                 <button
                   onClick={() => setView('manualLog')}
-                  className="w-full px-6 py-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-all border-2 border-gray-600 hover:border-gray-500"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-semibold rounded-2xl transition-all duration-300 border-2 border-gray-600 hover:border-gray-500 hover:scale-102 hover:shadow-xl shadow-gray-900/50 active:scale-98"
                 >
                   <div className="flex items-center justify-center gap-3">
                     <span className="text-2xl">📝</span>
                     <div className="text-left">
                       <div>Log External Workout</div>
-                      <div className="text-sm text-gray-400 font-normal">Track workouts you did outside the app</div>
+                      <div className="text-sm text-gray-300 font-normal">Track workouts you did outside the app</div>
                     </div>
                   </div>
                 </button>
