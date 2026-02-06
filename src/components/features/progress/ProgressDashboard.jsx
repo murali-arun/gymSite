@@ -72,17 +72,33 @@ function ProgressDashboard({ user }) {
     };
   }, [user.workouts]);
   
-  // Get last 30 days for calendar heatmap
+  // Get last 30 days for calendar heatmap (Sunday to Sunday view)
   const last30Days = useMemo(() => {
     const days = [];
     const today = new Date();
     const workouts = user?.workouts || [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
+    
+    // Find the most recent Sunday (or today if it's Sunday)
+    const currentDay = today.getDay(); // 0 = Sunday, 6 = Saturday
+    const mostRecentSunday = new Date(today);
+    mostRecentSunday.setDate(today.getDate() - currentDay);
+    
+    // Go back 5 weeks from the most recent Sunday to show ~5 weeks
+    const startDate = new Date(mostRecentSunday);
+    startDate.setDate(mostRecentSunday.getDate() - (4 * 7)); // 4 weeks back = 5 weeks total
+    
+    // Generate 35 days (5 weeks × 7 days)
+    for (let i = 0; i < 35; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
       const dateStr = date.toISOString().split('T')[0];
       const hasWorkout = workouts.some(w => w.date === dateStr);
-      days.push({ date: dateStr, hasWorkout, day: date.getDate() });
+      days.push({ 
+        date: dateStr, 
+        hasWorkout, 
+        day: date.getDate(),
+        dayOfWeek: date.getDay() // 0 = Sunday
+      });
     }
     return days;
   }, [user.workouts]);
@@ -121,7 +137,18 @@ function ProgressDashboard({ user }) {
       {/* Activity Calendar Heatmap */}
       <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
         <h3 className="text-xl font-bold text-white mb-4">📅 Last 30 Days</h3>
-        <div className="grid grid-cols-10 gap-2">
+        
+        {/* Day of week labels */}
+        <div className="grid grid-cols-7 gap-2 mb-2">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((dayName) => (
+            <div key={dayName} className="text-center text-xs font-medium text-gray-400">
+              {dayName}
+            </div>
+          ))}
+        </div>
+        
+        {/* Calendar grid (5 weeks × 7 days) */}
+        <div className="grid grid-cols-7 gap-2">
           {last30Days.map((day, idx) => (
             <div
               key={idx}
@@ -136,6 +163,7 @@ function ProgressDashboard({ user }) {
             </div>
           ))}
         </div>
+        
         <div className="mt-4 flex items-center gap-4 text-xs text-gray-400">
           <span className="flex items-center gap-1">
             <div className="w-3 h-3 bg-gray-700 rounded"></div> Rest day
