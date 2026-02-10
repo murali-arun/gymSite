@@ -2,6 +2,8 @@ import React, { useState, memo, useCallback, useEffect } from 'react';
 import { generateWorkout, generateWorkoutPlan } from '../../../services/api';
 import { setCurrentWorkout, addConversationMessage } from '../../../utils/storage';
 import { getWorkoutPlan, setWorkoutPlan, getNextWorkoutFromPlan, getRemainingWorkoutsCount } from '../../../utils/workoutPlanCache';
+import { saveToHistory, getWorkoutHistory, updateWorkoutEffectiveness } from '../../../utils/workoutHistory';
+import { selectBestWorkout, getWorkoutRecommendations } from '../../../utils/workoutSelector';
 import { useCoach } from '../../../contexts/CoachContext';
 import { Container, Section, InfoBox, Grid, Stack } from '../../organisms';
 import { FormField } from '../../molecules';
@@ -11,6 +13,9 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [remainingWorkouts, setRemainingWorkouts] = useState(0);
+  const [historyCount, setHistoryCount] = useState(0);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
   const [preferences, setPreferences] = useState({
     activityType: 'strength', // strength, cardio, stretching, mixed
     focus: '',
@@ -20,10 +25,13 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
   const { coachType, motivate } = useCoach();
 
   useEffect(() => {
-    // Check for cached workout plan
+    // Check for cached workout plan and history
     async function checkPlan() {
       const count = await getRemainingWorkoutsCount(user.id);
       setRemainingWorkouts(count);
+      
+      const history = await getWorkoutHistory(user.id);
+      setHistoryCount(history.length);
     }
     checkPlan();
   }, [user.id]);
@@ -70,6 +78,11 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
       };
       
       await setCurrentWorkout(user.id, workout);
+      
+      // Save to history
+      await saveToHistory(user.id, workout);
+      setHistoryCount(prev => prev + 1);
+      
       setRemainingWorkouts(daysCount - 1);
       motivate('workoutGenerated');
       onWorkoutGenerated(workout);
@@ -109,6 +122,11 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
       };
       
       await setCurrentWorkout(user.id, workout);
+      
+      // Save to history
+      await saveToHistory(user.id, workout);
+      setHistoryCount(prev => prev + 1);
+      
       const count = await getRemainingWorkoutsCount(user.id);
       setRemainingWorkouts(count - 1);
       motivate('workoutGenerated');
@@ -131,6 +149,10 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
       // Save to user's current workout
       await setCurrentWorkout(user.id, workout);
       
+      // Save to history
+      await saveToHistory(user.id, { ...workout, focus: preferences.focus });
+      setHistoryCount(prev => prev + 1);
+      
       // Add to conversation history
       let userMessage = `Generate today's workout (${preferences.activityType}).`;
       if (preferences.focus || preferences.equipment || preferences.notes) {
@@ -152,6 +174,96 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
       setLoading(false);
     }
   }, [user, preferences, coachType, motivate, onWorkoutGenerated]);
+
+  const handleLoadFromHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Get smart recommendation
+      const selectedWorkout = await selectBestWorkout(user.id, {
+        type: preferences.activityType,
+        focus: preferences.focus,
+      });
+
+      if (!selectedWorkout) {
+        setError('No suitable workout found in history. Generate a new one!');
+        setLoading(false);
+        return;
+      }
+
+      // Create a new workout instance from history
+      const workout = {
+        ...selectedWorkout,
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        generatedAt: new Date().toISOString(),
+        fromHistory: true,
+        originalId: selectedWorkout.id,
+      };
+
+      await setCurrentWorkout(user.id, workout);
+      
+      // Update effectiveness tracking
+      await updateWorkoutEffectiveness(user.id, selectedWorkout.id, { used: true });
+      
+      motivate('workoutGenerated');
+      onWorkoutGenerated(workout);
+      
+      console.log('✅ Loaded workout from history:', selectedWorkout.id);
+    } catch (err) {
+      setError(err.message || 'Failed to load workout from history');
+    } finally {
+      setLoading(false);
+    }
+  }, [user.id, preferences, motivate, onWorkoutGenerated]);
+
+  const handleShowRecommendations = useCallback(async () => {
+    if (showRecommendations) {
+      setShowRecommendations(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const recs = await getWorkoutRecommendations(user.id, 5, {
+        type: preferences.activityType,
+      });
+      setRecommendations(recs);
+      setShowRecommendations(true);
+    } catch (err) {
+      setError('Failed to load recommendations');
+    } finally {
+      setLoading(false);
+    }
+  }, [user.id, preferences.activityType, showRecommendations]);
+
+  const handleSelectRecommendation = useCallback(async (selectedWorkout) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const workout = {
+        ...selectedWorkout,
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        generatedAt: new Date().toISOString(),
+        fromHistory: true,
+        originalId: selectedWorkout.id,
+      };
+
+      await setCurrentWorkout(user.id, workout);
+      await updateWorkoutEffectiveness(user.id, selectedWorkout.id, { used: true });
+      
+      setShowRecommendations(false);
+      motivate('workoutGenerated');
+      onWorkoutGenerated(workout);
+    } catch (err) {
+      setError(err.message || 'Failed to load workout');
+    } finally {
+      setLoading(false);
+    }
+  }, [user.id, motivate, onWorkoutGenerated]);
 
   return (
     <Stack spacing="lg">
@@ -249,8 +361,97 @@ const WorkoutGenerator = memo(function WorkoutGenerator({ user, onWorkoutGenerat
           </div>
         )}
 
+        {/* Load from History */}
+        {historyCount > 0 && (
+          <div className="mt-6 mb-6">
+            <div className="glass rounded-xl p-5 border border-purple-500/30">
+              <div className="flex items-start gap-3 mb-4">
+                <span className="text-2xl">🎯</span>
+                <div className="flex-1">
+                  <h4 className="text-white font-semibold mb-1">Load From History</h4>
+                  <p className="text-sm text-gray-400">
+                    Smart selection finds the perfect workout based on recovery, patterns, and effectiveness. 
+                    <span className="text-green-400"> Automatically updates with your new PRs!</span>
+                  </p>
+                  <div className="mt-2 text-xs text-purple-400">
+                    ⚡ {historyCount} workouts in history • 100% Free • No API cost • Progressive Overload
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleLoadFromHistory}
+                  disabled={loading}
+                  variant="secondary"
+                  size="md"
+                  className="flex-1 border-purple-500/30 hover:border-purple-500/60"
+                >
+                  {loading ? 'Selecting...' : '🔮 Smart Pick for Today'}
+                </Button>
+                <Button
+                  onClick={handleShowRecommendations}
+                  disabled={loading}
+                  variant="outline"
+                  size="md"
+                >
+                  {showRecommendations ? 'Hide' : 'Browse'}
+                </Button>
+              </div>
+
+              {/* Recommendations */}
+              {showRecommendations && recommendations.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+                    Top Recommendations
+                  </div>
+                  {recommendations.map((rec, idx) => (
+                    <div
+                      key={rec.id}
+                      className="glass-strong rounded-lg p-3 border border-gray-700 hover:border-purple-500/50 transition-all cursor-pointer"
+                      onClick={() => handleSelectRecommendation(rec)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold text-white">
+                              {rec.type.charAt(0).toUpperCase() + rec.type.slice(1)} • {rec.metadata.intensity}
+                            </span>
+                            {idx === 0 && <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">Best Match</span>}
+                            {rec.progressUpdates?.updateCount > 0 && (
+                              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full" title={`Updated ${rec.progressUpdates.updateCount} time(s) with new PRs`}>
+                                📈 Progressive
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {rec.metadata.muscleGroups.slice(0, 3).join(', ')} • {rec.metadata.totalSets} sets • {rec.metadata.duration}min
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Used {rec.effectiveness.timesUsed}x • Score: {(rec.recommendationScore * 100).toFixed(0)}%
+                            {rec.progressUpdates?.updateCount > 0 && ` • ${rec.progressUpdates.updateCount} PR update${rec.progressUpdates.updateCount > 1 ? 's' : ''}`}
+                          </div>
+                        </div>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectRecommendation(rec);
+                          }}
+                          variant="primary"
+                          size="sm"
+                        >
+                          Use
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 mb-4 text-center text-sm text-gray-500">
-          Or generate a single workout for today
+          {historyCount > 0 ? 'Or generate a new workout with AI' : 'Or generate a single workout for today'}
         </div>
 
         <Stack spacing="md" className="mt-6">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sendWorkoutFeedback, generateProgressSummary } from '../../../services/api';
 import { saveWorkoutToUser, clearCurrentWorkout, addConversationMessage, shouldSummarize, updateSummary, getUser } from '../../../utils/storage';
+import { updateWorkoutEffectiveness, updateWorkoutProgress } from '../../../utils/workoutHistory';
 import { useCoach } from '../../../contexts/CoachContext';
 
 function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) {
@@ -22,9 +23,12 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   const [setTimestamps, setSetTimestamps] = useState([]);
   const [restTimer, setRestTimer] = useState(null);
   const [recommendedRestTime, setRecommendedRestTime] = useState(null);
+  const [restElapsedTime, setRestElapsedTime] = useState(0);
+  const [restStartTime, setRestStartTime] = useState(null);
   const timerRef = useRef(null);
   const exerciseTimerRef = useRef(null);
   const restTimerRef = useRef(null);
+  const restElapsedTimerRef = useRef(null);
   
   // Pre-workout status
   const [showPreWorkout, setShowPreWorkout] = useState(false);
@@ -97,6 +101,24 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       }
     };
   }, [workoutStartTime, workoutStarted, countdown, workoutPaused, pausedTime]);
+
+  // Rest elapsed timer effect (counts UP)
+  useEffect(() => {
+    if (restStartTime && workoutStarted && !workoutPaused) {
+      restElapsedTimerRef.current = setInterval(() => {
+        setRestElapsedTime(Math.floor((Date.now() - restStartTime) / 1000));
+      }, 1000);
+    } else {
+      if (restElapsedTimerRef.current) {
+        clearInterval(restElapsedTimerRef.current);
+      }
+    }
+    return () => {
+      if (restElapsedTimerRef.current) {
+        clearInterval(restElapsedTimerRef.current);
+      }
+    };
+  }, [restStartTime, workoutStarted, workoutPaused]);
 
   // Exercise timer effect
   useEffect(() => {
@@ -208,6 +230,10 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     // Show coach motivation when starting workout!
     motivate('workoutStart');
     
+    // Reset rest timer
+    setRestStartTime(null);
+    setRestElapsedTime(0);
+    
     setCountdown(5);
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
@@ -256,6 +282,10 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     updated[currentExerciseIndex].sets[currentSetIndex].completed = true;
     setExercises(updated);
 
+    // Start rest elapsed timer (counts UP)
+    setRestStartTime(Date.now());
+    setRestElapsedTime(0);
+
     // Move to next set or exercise
     if (currentSetIndex < currentExercise.sets.length - 1) {
       // Next set in same exercise - start rest timer
@@ -272,6 +302,9 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         // Reset exercise timer
         setExerciseStartTime(Date.now());
         setExerciseElapsedTime(0);
+        // Reset rest elapsed timer
+        setRestStartTime(null);
+        setRestElapsedTime(0);
         // Start rest timer for transition
         const nextExercise = exercises[currentExerciseIndex + 1];
         const restTime = nextExercise.recommendedRest || 120; // Longer rest between exercises
@@ -281,6 +314,8 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         // Workout complete
         setWorkoutStarted(false);
         setRestTimer(null);
+        setRestStartTime(null);
+        setRestElapsedTime(0);
       }
     }
   };
@@ -311,6 +346,16 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     const wasCompleted = updated[exerciseIndex].sets[setIndex].completed;
     updated[exerciseIndex].sets[setIndex].completed = !wasCompleted;
     setExercises(updated);
+    
+    // Start/reset rest timer when completing a set
+    if (!wasCompleted) {
+      setRestStartTime(Date.now());
+      setRestElapsedTime(0);
+    } else {
+      // If uncompleting a set, stop rest timer
+      setRestStartTime(null);
+      setRestElapsedTime(0);
+    }
     
     // Motivate on set completion
     if (!wasCompleted) {
@@ -456,6 +501,28 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       // Save to user's history
       await saveWorkoutToUser(user.id, completedWorkout);
       await clearCurrentWorkout(user.id);
+
+      // Update workout effectiveness in history if it came from history
+      if (workout.fromHistory && workout.originalId) {
+        const userRating = Math.round((11 - postWorkoutData.difficulty) / 2); // Convert difficulty 1-10 to rating 1-5
+        
+        // Update effectiveness (rating, completion)
+        await updateWorkoutEffectiveness(user.id, workout.originalId, {
+          completed: true,
+          userRating: userRating,
+        });
+        
+        // Update with new weights/reps for progressive overload
+        const progressUpdated = await updateWorkoutProgress(
+          user.id, 
+          workout.originalId, 
+          exercises
+        );
+        
+        if (progressUpdated) {
+          console.log('✅ Cached workout updated with new PRs - next time you use it, weights will be higher!');
+        }
+      }
 
       // Celebrate workout completion!
       motivate('workoutComplete');
@@ -749,6 +816,12 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
               <div className="text-[10px] md:text-xs text-blue-400 mb-0.5 md:mb-1">Exercise</div>
               <div className="text-lg md:text-2xl font-bold text-blue-400 font-mono">{formatTime(exerciseElapsedTime)}</div>
             </div>
+            {restStartTime && (
+              <div className="border-l border-gray-600 pl-2 md:pl-4">
+                <div className="text-[10px] md:text-xs text-red-400 mb-0.5 md:mb-1">Rest</div>
+                <div className="text-lg md:text-2xl font-bold text-red-400 font-mono">{formatTime(restElapsedTime)}</div>
+              </div>
+            )}
           </div>
           {workoutPaused && (
             <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-yellow-400 text-center font-semibold">
