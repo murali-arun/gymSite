@@ -807,6 +807,99 @@ Regenerate this workout with exercise variety - each exercise should appear only
   throw lastError || new Error('Failed to generate valid workout after multiple attempts');
 }
 
+export async function generateTemplatesFromHistory(user) {
+  console.log('=== GENERATING AI TEMPLATES FROM HISTORY ===');
+
+  if (!user.workouts || user.workouts.length < 3) {
+    throw new Error('Need at least 3 workouts to analyze patterns');
+  }
+
+  const messages = [
+    {
+      role: 'system',
+      content: `You are an experienced gym trainer analyzing a client's workout history to identify patterns and create reusable workout templates.
+
+Your goal: Find common workout patterns (recurring exercise combinations) and create 2-4 templates that represent their most frequent training styles.
+
+ANALYZE FOR:
+1. Frequently paired exercises (e.g., Squat + Bench + Rows often together = Upper/Lower template)
+2. Common split patterns (e.g., Push day, Pull day, Leg day)
+3. Exercise combinations that appear multiple times
+4. Volume patterns (sets/reps that repeat)
+
+CREATE TEMPLATES THAT:
+- Represent actual patterns from their history (not generic programs)
+- Use exercises they've successfully completed before
+- Include realistic weights based on their past performance
+- Are named descriptively (e.g., "Upper Power", "Leg Strength", "Push Day")
+- Have 4-6 exercises each
+
+RETURN ONLY VALID JSON (no markdown):
+{
+  "templates": [
+    {
+      "name": "Template Name",
+      "description": "Why this template matches their history",
+      "tags": ["push", "upper", "strength"],
+      "exercises": [
+        {
+          "name": "Exercise Name",
+          "perSide": false,
+          "metric": "reps",
+          "recommendedRest": 90,
+          "formCues": ["Form cue 1", "Form cue 2"],
+          "sets": [
+            {"weight": 135, "reps": 8, "completed": false},
+            {"weight": 135, "reps": 8, "completed": false},
+            {"weight": 135, "reps": 8, "completed": false}
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+If no clear patterns exist, return: {"templates": []}`
+    },
+    {
+      role: 'user',
+      content: `Analyze my workout history and create 2-4 reusable templates based on patterns you find.\n\nMy ${user.workouts.length} completed workouts:\n${JSON.stringify(user.workouts.slice(-20).map(w => ({
+        date: w.date,
+        description: w.description,
+        exercises: w.exercises?.map(e => ({
+          name: e.name,
+          sets: e.sets.length,
+          avgWeight: e.sets.reduce((sum, s) => sum + (s.weight || 0), 0) / e.sets.length,
+          avgReps: e.sets.reduce((sum, s) => sum + (s.reps || 0), 0) / e.sets.length
+        }))
+      })), null, 2)}`
+    }
+  ];
+
+  try {
+    const response = await callLiteLLM(messages, 'template-generation');
+    
+    // Clean response
+    let cleanResponse = response.trim();
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    } else if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.replace(/```\n?/g, '');
+    }
+    
+    const data = JSON.parse(cleanResponse);
+    
+    console.log('=== AI GENERATED TEMPLATES ===');
+    console.log(JSON.stringify(data.templates, null, 2));
+    console.log('==============================');
+    
+    return data.templates || [];
+  } catch (error) {
+    console.error('Error generating AI templates:', error);
+    throw error;
+  }
+}
+
 export async function sendWorkoutFeedback(user, completedWorkout) {
   let workoutSummary;
   

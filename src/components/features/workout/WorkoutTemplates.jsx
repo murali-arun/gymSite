@@ -11,6 +11,8 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
   const [templateDescription, setTemplateDescription] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [workoutToSave, setWorkoutToSave] = useState(null);
+  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
+  const [generatingAITemplates, setGeneratingAITemplates] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -20,6 +22,8 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
 
   const loadTemplates = () => {
     const userTemplates = getTemplates(user.id);
+    console.log('📚 Loading templates for user:', user.id);
+    console.log('📚 Templates loaded:', userTemplates);
     setTemplates(userTemplates);
   };
 
@@ -63,7 +67,12 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
       setTemplateDescription('');
       setSelectedTags([]);
       setWorkoutToSave(null);
-      loadTemplates();
+      
+      // Force reload templates
+      const updatedTemplates = getTemplates(user.id);
+      console.log('📚 Templates after save:', updatedTemplates);
+      setTemplates(updatedTemplates);
+      
       alert('✅ Template saved successfully!');
     } catch (error) {
       console.error('Error saving template:', error);
@@ -83,7 +92,15 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
   };
 
   const handleDeleteTemplate = async (templateId) => {
-    if (!window.confirm('Are you sure you want to delete this template? This cannot be undone.')) {
+    const templateToDelete = templates.find(t => t.id === templateId);
+    const templateName = templateToDelete?.name || 'this template';
+    
+    if (!window.confirm(
+      `Delete "${templateName}"?\n\n` +
+      `⚠️  This will only delete THIS template\n` +
+      `✅ Your other ${templates.length - 1} template${templates.length - 1 !== 1 ? 's' : ''} will remain safe\n\n` +
+      `This cannot be undone.`
+    )) {
       return;
     }
 
@@ -96,6 +113,69 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
     } catch (error) {
       console.error('Error deleting template:', error);
       alert('Failed to delete template. Please try again.');
+    }
+  };
+
+  const handleGenerateAITemplates = async () => {
+    if (!user?.workouts || user.workouts.length < 3) {
+      alert('You need at least 3 completed workouts for AI to analyze patterns and create templates.');
+      return;
+    }
+
+    // Confirm with user
+    const confirmed = window.confirm(
+      `AI will analyze your ${user.workouts.length} workouts and ADD new templates based on patterns it finds.\n\n` +
+      `✅ Your existing ${templates.length} template${templates.length !== 1 ? 's' : ''} will NOT be deleted\n` +
+      `✅ You can manually delete any template you don't want\n\n` +
+      `Continue?`
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+
+    setGeneratingAITemplates(true);
+
+    try {
+      // Import the API function dynamically
+      const { generateTemplatesFromHistory } = await import('../../../services/api');
+      
+      const suggestedTemplates = await generateTemplatesFromHistory(user);
+      
+      if (!suggestedTemplates || suggestedTemplates.length === 0) {
+        alert('AI couldn\'t find clear workout patterns in your history. Keep logging workouts and try again later!');
+        setGeneratingAITemplates(false);
+        return;
+      }
+
+      // Save each suggested template
+      let savedCount = 0;
+      for (const template of suggestedTemplates) {
+        try {
+          saveAsTemplate(
+            user.id,
+            { exercises: template.exercises, type: 'strength' },
+            template.name,
+            template.description,
+            template.tags || []
+          );
+          savedCount++;
+        } catch (err) {
+          console.error('Error saving AI template:', err);
+        }
+      }
+
+      loadTemplates();
+      setGeneratingAITemplates(false);
+      alert(
+        `✅ AI ADDED ${savedCount} new template${savedCount > 1 ? 's' : ''} to your library!\n\n` +
+        `Total templates: ${templates.length + savedCount}\n\n` +
+        `Tip: You can delete any template you don't need by clicking the 🗑️ button.`
+      );
+    } catch (error) {
+      console.error('Error generating AI templates:', error);
+      setGeneratingAITemplates(false);
+      alert('Failed to generate templates. Please try again.');
     }
   };
 
@@ -129,6 +209,11 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
           <div className="text-yellow-200">
             templates: {templates.length} saved templates
           </div>
+          {templates.length > 0 && (
+            <div className="text-yellow-200 mt-2">
+              Template names: {templates.map(t => t.name).join(', ')}
+            </div>
+          )}
         </div>
       )}
 
@@ -143,12 +228,43 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
           </div>
         </div>
 
+        {/* AI Template Generator */}
+        {user?.workouts && user.workouts.length >= 3 && (
+          <div className="mt-6">
+            <button
+              onClick={handleGenerateAITemplates}
+              disabled={generatingAITemplates}
+              className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-500 text-white font-semibold rounded-xl transition-all duration-300 hover:scale-102 shadow-lg shadow-purple-900/50 disabled:shadow-none disabled:cursor-not-allowed"
+            >
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-2xl">{generatingAITemplates ? '⏳' : '🤖'}</span>
+                <div className="text-left">
+                  <div>{generatingAITemplates ? 'Analyzing Your Workouts...' : 'AI: Generate Templates from History'}</div>
+                  <div className="text-sm text-purple-100 font-normal">
+                    {generatingAITemplates ? 'Finding patterns in your training' : `Adds templates (never deletes) • ${user.workouts.length} workouts`}
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* Save from Recent Workouts or Current */}
         {(!currentWorkout || !currentWorkout.exercises?.length) && user?.workouts && user.workouts.length > 0 && (
           <div className="mt-6">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">💾 Save from Recent Workouts</h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-semibold text-gray-300">💾 Save from Workout History</h3>
+              {user.workouts.length > 6 && (
+                <button
+                  onClick={() => setShowAllWorkouts(!showAllWorkouts)}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  {showAllWorkouts ? '▲ Show Less' : `▼ Show All (${user.workouts.length})`}
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {user.workouts.slice(-6).reverse().map((workout, idx) => (
+              {(showAllWorkouts ? user.workouts : user.workouts.slice(-6)).reverse().map((workout, idx) => (
                 <button
                   key={workout.id || idx}
                   onClick={() => handleOpenSaveModal(workout)}
@@ -203,10 +319,19 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
       </div>
 
       {/* My Templates */}
-      {templates.length > 0 && (
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-          <h3 className="text-xl font-bold text-white mb-4">📚 My Templates</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{templates.map(template => (
+      <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+        <h3 className="text-xl font-bold text-white mb-4">📚 My Templates ({templates.length})</h3>
+        
+        {templates.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-3">📋</div>
+            <p className="text-gray-400">
+              No templates saved yet. Save a workout to create your first template!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {templates.map(template => (
               <div
                 key={template.id}
                 className="bg-gray-700/50 border border-gray-600 rounded-lg p-4 hover:bg-gray-700 transition-all"
@@ -272,8 +397,8 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Save Template Modal */}
       {showSaveModal && (
