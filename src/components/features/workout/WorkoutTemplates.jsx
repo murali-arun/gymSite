@@ -10,6 +10,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
+  const [workoutToSave, setWorkoutToSave] = useState(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -22,23 +23,32 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
     setTemplates(userTemplates);
   };
 
+  const handleOpenSaveModal = (workout) => {
+    setWorkoutToSave(workout);
+    setTemplateName(workout.description || '');
+    setShowSaveModal(true);
+  };
+
   const handleSaveTemplate = async () => {
     if (!templateName.trim()) {
       alert('Please enter a template name');
       return;
     }
 
-    if (!currentWorkout || !currentWorkout.exercises || currentWorkout.exercises.length === 0) {
+    const workout = workoutToSave || currentWorkout;
+    
+    if (!workout || !workout.exercises || workout.exercises.length === 0) {
       alert('No workout to save. Generate or complete a workout first.');
       return;
     }
 
     try {
-      await saveAsTemplate(user.id, currentWorkout, templateName, templateDescription, selectedTags);
+      await saveAsTemplate(user.id, workout, templateName, templateDescription, selectedTags);
       setShowSaveModal(false);
       setTemplateName('');
       setTemplateDescription('');
       setSelectedTags([]);
+      setWorkoutToSave(null);
       loadTemplates();
       alert('✅ Template saved successfully!');
     } catch (error) {
@@ -96,33 +106,72 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
               Save and reuse your favorite workouts with progressive overload
             </p>
           </div>
-          
-          <Button
-            onClick={() => setShowSaveModal(true)}
-            disabled={!currentWorkout || !currentWorkout.exercises?.length}
-            className="whitespace-nowrap"
-          >
-            💾 Save Current Workout
-          </Button>
         </div>
 
-        {/* Templates Grid */}
-        {templates.length === 0 ? (
-          <div className="mt-8 text-center py-12">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-bold text-white mb-2">No Templates Yet</h3>
-            <p className="text-gray-400 mb-4">
-              Create your first template by saving your current workout
-            </p>
-            {!currentWorkout && (
-              <p className="text-sm text-gray-500">
-                Generate or complete a workout first, then click "Save Current Workout"
-              </p>
-            )}
+        {/* Save from Recent Workouts or Current */}
+        {(!currentWorkout || !currentWorkout.exercises?.length) && user?.workouts && user.workouts.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">💾 Save from Recent Workouts</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {user.workouts.slice(-6).reverse().map((workout, idx) => (
+                <button
+                  key={workout.id || idx}
+                  onClick={() => handleOpenSaveModal(workout)}
+                  className="bg-gray-700/50 border border-gray-600 rounded-lg p-3 hover:bg-gray-700 hover:border-blue-500 transition-all text-left group"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="font-medium text-white group-hover:text-blue-400 transition-colors">
+                      {workout.description || 'Workout'}
+                    </div>
+                    <span className="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      →
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {new Date(workout.date).toLocaleDateString()} • {workout.exercises?.length || 0} exercises
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        ) : (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map(template => (
+        )}
+
+        {/* Save Current Workout */}
+        {currentWorkout && currentWorkout.exercises?.length > 0 && (
+          <div className="mt-6">
+            <button
+              onClick={() => handleOpenSaveModal(currentWorkout)}
+              className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white font-semibold rounded-xl transition-all duration-300 hover:scale-102 shadow-lg shadow-blue-900/50"
+            >
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-2xl">💾</span>
+                <div className="text-left">
+                  <div>Save Current Workout as Template</div>
+                  <div className="text-sm text-blue-100 font-normal">
+                    {currentWorkout.exercises?.length || 0} exercises ready to save
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!currentWorkout && (!user?.workouts || user.workouts.length === 0) && templates.length === 0 && (
+          <div className="mt-6 text-center py-8">
+            <div className="text-4xl mb-3">📝</div>
+            <p className="text-gray-400 text-sm">
+              Complete a workout first, then come back here to save it as a template
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* My Templates */}
+      {templates.length > 0 && (
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+          <h3 className="text-xl font-bold text-white mb-4">📚 My Templates</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{templates.map(template => (
               <div
                 key={template.id}
                 className="bg-gray-700/50 border border-gray-600 rounded-lg p-4 hover:bg-gray-700 transition-all"
@@ -188,13 +237,36 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Save Template Modal */}
       {showSaveModal && (
-        <Modal onClose={() => setShowSaveModal(false)} title="Save as Template">
+        <Modal 
+          onClose={() => {
+            setShowSaveModal(false);
+            setWorkoutToSave(null);
+            setTemplateName('');
+            setTemplateDescription('');
+            setSelectedTags([]);
+          }} 
+          title="Save as Template"
+        >
           <div className="space-y-4">
+            {/* Workout Info */}
+            {(workoutToSave || currentWorkout) && (
+              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                <div className="text-sm text-blue-300">
+                  📋 Saving workout with {(workoutToSave || currentWorkout).exercises?.length || 0} exercises
+                  {(workoutToSave || currentWorkout).date && (
+                    <span className="text-blue-400/70 ml-2">
+                      from {new Date((workoutToSave || currentWorkout).date).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Template Name *
@@ -256,7 +328,13 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
                 💾 Save Template
               </button>
               <button
-                onClick={() => setShowSaveModal(false)}
+                onClick={() => {
+                  setShowSaveModal(false);
+                  setWorkoutToSave(null);
+                  setTemplateName('');
+                  setTemplateDescription('');
+                  setSelectedTags([]);
+                }}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-all"
               >
                 Cancel
