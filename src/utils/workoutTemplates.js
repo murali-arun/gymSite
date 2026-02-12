@@ -24,7 +24,17 @@ const TEMPLATES_KEY = 'workoutTemplates';
 export function getTemplates(userId) {
   try {
     const templates = JSON.parse(localStorage.getItem(TEMPLATES_KEY) || '{}');
-    return templates[userId] || [];
+    const userTemplates = templates[userId] || [];
+    
+    // Ensure all templates have required properties
+    return userTemplates.map(template => ({
+      ...template,
+      tags: template.tags || [],
+      exercises: template.exercises || [],
+      timesUsed: template.timesUsed || 0,
+      lastUsed: template.lastUsed || null,
+      description: template.description || ''
+    }));
   } catch (error) {
     console.error('Error reading templates:', error);
     return [];
@@ -52,13 +62,13 @@ export function saveAsTemplate(userId, workout, templateName, description = '', 
       type: workout.type || 'strength',
       exercises: workout.exercises?.map(ex => ({
         ...ex,
-        sets: ex.sets.map(set => ({
+        sets: ex.sets?.map(set => ({
           weight: set.weight || set.targetWeight || 0,
           reps: set.reps || set.targetReps || 0,
           completed: false,
           targetWeight: set.weight || set.targetWeight || 0,
           targetReps: set.reps || set.targetReps || 0
-        }))
+        })) || []
       })) || [],
       cardio: workout.cardio || null,
       tags: tags
@@ -102,14 +112,14 @@ export function loadTemplate(userId, templateId, userWorkouts = []) {
     };
     
     // Update exercises with latest performance data for progressive overload
-    if (template.exercises) {
+    if (template.exercises && Array.isArray(template.exercises)) {
       workout.exercises = template.exercises.map(templateEx => {
         // Find most recent performance of this exercise
         const latestPerformance = findLatestExercisePerformance(userWorkouts, templateEx.name);
         
         return {
           ...templateEx,
-          sets: templateEx.sets.map((set, idx) => {
+          sets: (templateEx.sets || []).map((set, idx) => {
             // Try to use last session's data, fall back to template defaults
             const lastSet = latestPerformance?.sets?.[idx];
             

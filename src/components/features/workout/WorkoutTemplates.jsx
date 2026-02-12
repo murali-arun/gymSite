@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getTemplates, saveAsTemplate, loadTemplate, deleteTemplate, getSuggestedTags } from '../../../utils/workoutTemplates';
+import { cleanupTemplates } from '../../../utils/cleanupTemplates';
 import { Modal } from '../../organisms';
 import { Button } from '../../atoms';
 
@@ -16,6 +17,8 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
 
   useEffect(() => {
     if (user?.id) {
+      // Clean up any corrupted templates on first load
+      cleanupTemplates();
       loadTemplates();
     }
   }, [user?.id]);
@@ -356,7 +359,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
                 </div>
 
                 {/* Tags */}
-                {template.tags.length > 0 && (
+                {template.tags && template.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     {template.tags.slice(0, 3).map(tag => (
                       <span
@@ -375,7 +378,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
                 {/* Stats */}
                 <div className="text-sm text-gray-400 mb-3 space-y-1">
                   <div>💪 {template.exercises?.length || 0} exercises</div>
-                  <div>🔁 Used {template.timesUsed} times</div>
+                  <div>🔁 Used {template.timesUsed || 0} times</div>
                   {template.lastUsed && (
                     <div className="text-xs text-gray-500">
                       Last: {new Date(template.lastUsed).toLocaleDateString()}
@@ -525,7 +528,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
               <p className="text-gray-300">{showTemplateDetails.description}</p>
             )}
 
-            {showTemplateDetails.tags.length > 0 && (
+            {showTemplateDetails.tags && showTemplateDetails.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {showTemplateDetails.tags.map(tag => (
                   <span
@@ -545,7 +548,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
                   <div key={idx} className="bg-gray-700/50 rounded p-3">
                     <div className="font-medium text-white mb-2">{ex.name}</div>
                     <div className="text-sm text-gray-400">
-                      {ex.sets.length} sets × {ex.sets[0]?.reps || 0} reps @ {ex.sets[0]?.weight || 0} lbs
+                      {ex.sets?.length || 0} sets × {ex.sets?.[0]?.reps || 0} reps @ {ex.sets?.[0]?.weight || 0} lbs
                     </div>
                   </div>
                 ))}
