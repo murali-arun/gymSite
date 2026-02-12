@@ -34,6 +34,8 @@ function AppContent() {
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const [showCoachSelector, setShowCoachSelector] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [workoutDropdownOpen, setWorkoutDropdownOpen] = useState(false);
+  const [progressDropdownOpen, setProgressDropdownOpen] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -53,6 +55,19 @@ function AppContent() {
     }
     loadUser();
   }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setWorkoutDropdownOpen(false);
+      setProgressDropdownOpen(false);
+    };
+    
+    if (workoutDropdownOpen || progressDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [workoutDropdownOpen, progressDropdownOpen]);
 
   const handleUserSelected = useCallback(async (userId) => {
     const userData = await getUser(userId);
@@ -208,7 +223,8 @@ function AppContent() {
             </div>
             
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex gap-2">
+            <div className="hidden lg:flex gap-2 items-center">
+              {/* Home */}
               <button
                 onClick={() => setView('home')}
                 className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
@@ -217,18 +233,108 @@ function AppContent() {
                     : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
                 }`}
               >
-                Home
+                🏠 Home
               </button>
-              <button
-                onClick={() => setView('dashboard')}
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
-                  view === 'dashboard'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
-                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
-                }`}
-              >
-                📊 Stats
-              </button>
+
+              {/* Workout Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setWorkoutDropdownOpen(!workoutDropdownOpen);
+                    setProgressDropdownOpen(false);
+                  }}
+                  className={`px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-1 ${
+                    ['templates', 'strength', 'history'].includes(view)
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                      : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
+                  }`}
+                >
+                  💪 Workout
+                  <svg className={`w-4 h-4 transition-transform ${ workoutDropdownOpen ? 'rotate-180' : '' }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {workoutDropdownOpen && (
+                  <div onClick={(e) => e.stopPropagation()} className="absolute top-full mt-2 right-0 w-48 glass-strong rounded-2xl overflow-hidden shadow-xl border border-white/10 z-50">
+                    <button
+                      onClick={() => { setView('templates'); setWorkoutDropdownOpen(false); }}
+                      className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${
+                        view === 'templates' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                      }`}
+                    >
+                      💾 Templates
+                    </button>
+                    <button
+                      onClick={() => { setView('strength'); setWorkoutDropdownOpen(false); }}
+                      className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${
+                        view === 'strength' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                      }`}
+                    >
+                      ⚡ 1RM Calculator
+                    </button>
+                    <button
+                      onClick={() => { setView('history'); setWorkoutDropdownOpen(false); }}
+                      className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${
+                        view === 'history' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                      }`}
+                    >
+                      📜 History
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProgressDropdownOpen(!progressDropdownOpen);
+                    setWorkoutDropdownOpen(false);
+                  }}
+                  className={`px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-1 ${
+                    ['dashboard', 'achievements', 'progress'].includes(view)
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                      : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
+                  }`}
+                >
+                  📊 Progress
+                  <svg className={`w-4 h-4 transition-transform ${ progressDropdownOpen ? 'rotate-180' : '' }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {progressDropdownOpen && (
+                  <div onClick={(e) => e.stopPropagation()} className="absolute top-full mt-2 right-0 w-48 glass-strong rounded-2xl overflow-hidden shadow-xl border border-white/10 z-50">
+                    <button
+                      onClick={() => { setView('dashboard'); setProgressDropdownOpen(false); }}
+                      className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${
+                        view === 'dashboard' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                      }`}
+                    >
+                      📈 Stats
+                    </button>
+                    <button
+                      onClick={() => { setView('achievements'); setProgressDropdownOpen(false); }}
+                      className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${
+                        view === 'achievements' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                      }`}
+                    >
+                      🏆 Badges
+                    </button>
+                    <button
+                      onClick={() => { setView('progress'); setProgressDropdownOpen(false); }}
+                      className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${
+                        view === 'progress' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                      }`}
+                    >
+                      📉 Details
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Coach */}
               <button
                 onClick={() => setShowCoachSelector(true)}
                 className="px-4 py-2 rounded-full font-medium glass-strong hover:bg-white/15 text-accent-purple transition-all duration-300 hover:scale-105 active:scale-95"
@@ -236,56 +342,8 @@ function AppContent() {
               >
                 🎯 Coach
               </button>
-              <button
-                onClick={() => setView('achievements')}
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
-                  view === 'achievements'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
-                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
-                }`}
-              >
-                🏆 Badges
-              </button>
-              <button
-                onClick={() => setView('progress')}
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
-                  view === 'progress'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
-                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
-                }`}
-              >
-                Progress
-              </button>
-              <button
-                onClick={() => setView('history')}
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
-                  view === 'history'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
-                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
-                }`}
-              >
-                History
-              </button>
-              <button
-                onClick={() => setView('templates')}
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
-                  view === 'templates'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
-                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
-                }`}
-              >
-                💾 Templates
-              </button>
-              <button
-                onClick={() => setView('strength')}
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
-                  view === 'strength'
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
-                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
-                }`}
-              >
-                💪 1RM
-              </button>
+
+              {/* Switch User */}
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 rounded-full font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white hover:scale-105 active:scale-95"
@@ -313,6 +371,7 @@ function AppContent() {
           <AnimatePresence>
             {showMobileMenu && (
               <div className="lg:hidden mt-4 space-y-2 animate-slide-up">
+                {/* Home */}
                 <button
                   onClick={() => { setView('home'); setShowMobileMenu(false); }}
                   className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
@@ -323,72 +382,78 @@ function AppContent() {
                 >
                   🏠 Home
                 </button>
-                <button
-                  onClick={() => { setView('dashboard'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
-                    view === 'dashboard'
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                      : 'glass-strong hover:bg-white/15 text-gray-300'
-                  }`}
-                >
-                  📊 Stats
-                </button>
+
+                {/* Workout Section */}
+                <div className="glass-strong rounded-2xl overflow-hidden">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    💪 Workout
+                  </div>
+                  <button
+                    onClick={() => { setView('templates'); setShowMobileMenu(false); }}
+                    className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
+                      view === 'templates' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                    }`}
+                  >
+                    💾 Templates
+                  </button>
+                  <button
+                    onClick={() => { setView('strength'); setShowMobileMenu(false); }}
+                    className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
+                      view === 'strength' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                    }`}
+                  >
+                    ⚡ 1RM Calculator
+                  </button>
+                  <button
+                    onClick={() => { setView('history'); setShowMobileMenu(false); }}
+                    className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
+                      view === 'history' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                    }`}
+                  >
+                    📜 History
+                  </button>
+                </div>
+
+                {/* Progress Section */}
+                <div className="glass-strong rounded-2xl overflow-hidden">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    📊 Progress
+                  </div>
+                  <button
+                    onClick={() => { setView('dashboard'); setShowMobileMenu(false); }}
+                    className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
+                      view === 'dashboard' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                    }`}
+                  >
+                    📈 Stats
+                  </button>
+                  <button
+                    onClick={() => { setView('achievements'); setShowMobileMenu(false); }}
+                    className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
+                      view === 'achievements' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                    }`}
+                  >
+                    🏆 Badges
+                  </button>
+                  <button
+                    onClick={() => { setView('progress'); setShowMobileMenu(false); }}
+                    className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
+                      view === 'progress' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                    }`}
+                  >
+                    📉 Details
+                  </button>
+                </div>
+
+                {/* Coach */}
                 <button
                   onClick={() => { setShowCoachSelector(true); setShowMobileMenu(false); }}
                   className="w-full px-4 py-3 rounded-2xl font-medium glass-strong hover:bg-white/15 text-accent-purple transition-all duration-300 text-left active:scale-98"
                 >
                   🎯 Coach
                 </button>
-                <button
-                  onClick={() => { setView('achievements'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
-                    view === 'achievements'
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                      : 'glass-strong hover:bg-white/15 text-gray-300'
-                  }`}
-                >
-                  🏆 Badges
-                </button>
-                <button
-                  onClick={() => { setView('progress'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
-                    view === 'progress'
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                      : 'glass-strong hover:bg-white/15 text-gray-300'
-                  }`}
-                >
-                  📈 Progress
-                </button>
-                <button
-                  onClick={() => { setView('history'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
-                    view === 'history'
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                      : 'glass-strong hover:bg-white/15 text-gray-300'
-                  }`}
-                >
-                  📜 History
-                </button>
-                <button
-                  onClick={() => { setView('templates'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
-                    view === 'templates'
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                      : 'glass-strong hover:bg-white/15 text-gray-300'
-                  }`}
-                >
-                  💾 Templates
-                </button>
-                <button
-                  onClick={() => { setView('strength'); setShowMobileMenu(false); }}
-                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
-                    view === 'strength'
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
-                      : 'glass-strong hover:bg-white/15 text-gray-300'
-                  }`}
-                >
-                  💪 1RM Calculator
-                </button>
+
+                {/* Switch User */}
                 <button
                   onClick={() => { handleLogout(); setShowMobileMenu(false); }}
                   className="w-full px-4 py-3 rounded-2xl font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white text-left active:scale-98"
