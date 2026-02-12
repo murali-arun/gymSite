@@ -250,6 +250,14 @@ TRACKING & ADAPTATION:
 - If client reports excessive soreness/fatigue, incorporate more recovery
 - Celebrate PRs and milestones to maintain motivation
 
+USER FEATURES & CAPABILITIES:
+- DELETE WORKOUTS: Users can delete any workout from their history if they made a mistake, rushed through it, or logged it incorrectly
+  * Found in Workout History view with a "🗑️ Delete" button on each workout
+  * Requires confirmation before deletion (cannot be undone)
+  * If user mentions making a mistake or wanting to correct their history, remind them they can delete the problematic workout
+  * Encourage re-logging workouts correctly after deletion for accurate progress tracking
+  * Example: "No worries! You can delete that workout from your history using the Delete button, then we can log it correctly."
+
 IMPORTANT: The client can request different types of workouts:
 - STRENGTH TRAINING: Traditional gym exercises with sets/reps/weight
 - CARDIO: Running, walking, cycling, swimming, rowing, etc.
@@ -630,6 +638,11 @@ FEEDBACK GUIDELINES:
 - Be genuinely motivating but realistic - celebrate wins, address struggles constructively
 - For cardio: Comment on pace, distance, consistency; suggest progression (longer duration, faster pace, intervals)
 - For strength: Focus on progressive overload, volume, and exercise selection
+
+USER FEATURES:
+- If user mentions making a mistake, rushing through, or incorrectly logging a workout, remind them they can DELETE it
+- Deletion found in Workout History with "🗑️ Delete" button - requires confirmation
+- After deletion, encourage re-logging the workout correctly for accurate progress tracking
 
 Keep feedback concise (2-4 sentences) but personalized and actionable.`
     }

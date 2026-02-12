@@ -22,6 +22,8 @@ Welcome to the AI Gym Tracker documentation! This index will help you find the i
 ## 🎯 Feature Documentation
 
 - **[COACH_FEATURES.md](./COACH_FEATURES.md)** - AI coach personalities and features
+- **[DELETE_WORKOUT_FEATURE.md](./DELETE_WORKOUT_FEATURE.md)** - Delete workout functionality and AI guidance
+- **[WORKOUT_HISTORY_SYSTEM.md](./WORKOUT_HISTORY_SYSTEM.md)** - Workout history and caching system
 
 ## 🚢 Deployment
 
@@ -63,6 +65,12 @@ Welcome to the AI Gym Tracker documentation! This index will help you find the i
 #### ...understand the AI coach system
 → Check [COACH_FEATURES.md](./COACH_FEATURES.md)
 
+#### ...enable users to delete workouts
+→ See [DELETE_WORKOUT_FEATURE.md](./DELETE_WORKOUT_FEATURE.md)
+
+#### ...understand workout history and caching
+→ Review [WORKOUT_HISTORY_SYSTEM.md](./WORKOUT_HISTORY_SYSTEM.md)
+
 ---
 
 ## 📂 File Organization
@@ -79,6 +87,8 @@ Welcome to the AI Gym Tracker documentation! This index will help you find the i
 | DESIGN_SYSTEM.md | Component usage examples | Frontend developers |
 | SUMMARY.md | Migration summary | Team leads, Developers |
 | COACH_FEATURES.md | AI coach documentation | Product, Developers |
+| DELETE_WORKOUT_FEATURE.md | Delete workout feature | Product, AI System, Developers |
+| WORKOUT_HISTORY_SYSTEM.md | Workout history system | Developers |
 | DEPLOYMENT.md | Deployment guide | DevOps, Developers |
 
 ### Code Organization

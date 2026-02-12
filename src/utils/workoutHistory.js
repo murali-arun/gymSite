@@ -398,3 +398,30 @@ export async function clearOldWorkouts(userId, daysOld = 90) {
     return 0;
   }
 }
+
+/**
+ * Delete a specific workout from history
+ */
+export async function deleteWorkoutFromHistory(userId, workoutId) {
+  try {
+    const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    
+    if (!history[userId]) {
+      throw new Error('No workout history found for user');
+    }
+    
+    const workoutIndex = history[userId].findIndex(w => w.id === workoutId);
+    if (workoutIndex === -1) {
+      throw new Error('Workout not found in history');
+    }
+    
+    history[userId].splice(workoutIndex, 1);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    
+    console.log('✅ Workout deleted from history:', workoutId);
+    return true;
+  } catch (error) {
+    console.error('Error deleting workout from history:', error);
+    throw error;
+  }
+}

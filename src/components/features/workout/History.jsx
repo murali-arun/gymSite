@@ -1,10 +1,42 @@
 import React, { useState, memo } from 'react';
 import { EmptyState } from '../../molecules';
 import { Badge } from '../../atoms';
+import { deleteWorkout } from '../../../utils/storage';
 
 const History = memo(function History({ user, onRefresh }) {
   const [selectedWorkout, setSelectedWorkout] = useState(null);
+  const [deletingWorkoutId, setDeletingWorkoutId] = useState(null);
   const workouts = user?.workouts || [];
+
+  const handleDeleteWorkout = async (workoutId, workoutDate) => {
+    const confirmMessage = `Are you sure you want to delete the workout from ${new Date(workoutDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })}?\n\nThis action cannot be undone.`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setDeletingWorkoutId(workoutId);
+    try {
+      await deleteWorkout(user.id, workoutId);
+      if (onRefresh) {
+        await onRefresh();
+      }
+      // Clear selected workout if it was the one deleted
+      if (selectedWorkout?.id === workoutId) {
+        setSelectedWorkout(null);
+      }
+    } catch (error) {
+      console.error('Error deleting workout:', error);
+      alert('Failed to delete workout. Please try again.');
+    } finally {
+      setDeletingWorkoutId(null);
+    }
+  };
 
   if (workouts.length === 0) {
     return (
@@ -33,11 +65,13 @@ const History = memo(function History({ user, onRefresh }) {
           {workouts.map((workout, index) => (
             <div
               key={workout.id || index}
-              className="bg-gray-700/50 border border-gray-600 rounded-lg p-4 hover:bg-gray-700 transition-all cursor-pointer"
-              onClick={() => setSelectedWorkout(selectedWorkout?.id === workout.id ? null : workout)}
+              className="bg-gray-700/50 border border-gray-600 rounded-lg p-4 hover:bg-gray-700 transition-all"
             >
               <div className="flex justify-between items-start">
-                <div className="flex-1">
+                <div 
+                  className="flex-1 cursor-pointer"
+                  onClick={() => setSelectedWorkout(selectedWorkout?.id === workout.id ? null : workout)}
+                >
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-white">
                       {new Date(workout.date).toLocaleDateString('en-US', {
@@ -76,16 +110,39 @@ const History = memo(function History({ user, onRefresh }) {
                     </div>
                   )}
                 </div>
-                <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform ${
-                    selectedWorkout?.id === workout.id ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <div className="flex items-center gap-2 ml-4">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteWorkout(workout.id, workout.date);
+                    }}
+                    disabled={deletingWorkoutId === workout.id}
+                    className="px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                    title="Delete this workout"
+                  >
+                    {deletingWorkoutId === workout.id ? (
+                      <>
+                        <span className="animate-spin">⏳</span>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        🗑️ Delete
+                      </>
+                    )}
+                  </button>
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transition-transform cursor-pointer ${
+                      selectedWorkout?.id === workout.id ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    onClick={() => setSelectedWorkout(selectedWorkout?.id === workout.id ? null : workout)}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
 
               {selectedWorkout?.id === workout.id && (

@@ -334,6 +334,29 @@ export async function deleteUser(userId) {
   }
 }
 
+export async function deleteWorkout(userId, workoutId) {
+  try {
+    const user = await getUser(userId);
+    if (!user) throw new Error('User not found');
+    
+    // Find and remove the workout
+    const workoutIndex = user.workouts.findIndex(w => w.id === workoutId);
+    if (workoutIndex === -1) {
+      throw new Error('Workout not found');
+    }
+    
+    user.workouts.splice(workoutIndex, 1);
+    
+    await updateUser(userId, { workouts: user.workouts });
+    
+    console.log('✅ Workout deleted successfully');
+    return true;
+  } catch (error) {
+    console.error('Error deleting workout:', error);
+    throw error;
+  }
+}
+
 // ============================================
 // Workout Progress Auto-Save (localStorage)
 // ============================================
