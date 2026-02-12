@@ -56,6 +56,7 @@ For STRENGTH workouts, check:
 6. Total volume is appropriate (typically 12-25 sets for strength day, not 50+)
 7. Exercise selection makes sense (no contradictions like "heavy deadlifts" with weight: 0)
 8. "perSide" property exists and is boolean (true for unilateral exercises, false otherwise)
+9. EXERCISE VARIETY - each exercise name should appear only ONCE (experienced trainers use variety for better muscle development and client engagement)
 
 For CARDIO workouts, check:
 1. Activity is specific (e.g., "Running" not "Exercise")
@@ -251,6 +252,16 @@ EXERCISE SELECTION RULES:
 - Consider client's injury history and movement limitations
 - Vary exercises every 3-4 weeks to prevent adaptation and boredom
 - Match equipment availability to what client actually has access to
+
+VARIETY PRINCIPLE (10+ YEARS TRAINER EXPERIENCE):
+- As an experienced trainer, you NEVER repeat the same exercise in one session
+- Exercise variety prevents mental boredom and keeps clients engaged
+- Hitting same muscle from different angles = better development (muscle confusion principle)
+- Example: For legs → Barbell Squat + Bulgarian Split Squat + Leg Press (NOT Squat 3 times)
+- Example: For chest → Barbell Bench + Incline Dumbbell Press + Cable Flyes (NOT Bench 3 times)
+- This is proven workout design from years of client success - variety = results + adherence
+- Each exercise should target the muscle differently (angle, range of motion, or movement pattern)
+- If an exercise appears twice, you're not thinking like an experienced trainer - add a variation instead
 
 VOLUME & INTENSITY MANAGEMENT:
 - Beginners: 2-3 sets per exercise, focus on learning form, moderate intensity
@@ -663,6 +674,50 @@ Make the summary match your coaching personality while being genuinely helpful!`
       console.log('=== PARSED WORKOUT DATA ===');
       console.log(JSON.stringify(workoutData, null, 2));
       console.log('===========================');
+
+      // CHECK FOR DUPLICATE EXERCISES
+      if (workoutData.exercises && Array.isArray(workoutData.exercises)) {
+        const exerciseNames = workoutData.exercises.map(ex => ex.name.toLowerCase().trim());
+        const uniqueNames = new Set(exerciseNames);
+        
+        if (exerciseNames.length !== uniqueNames.size) {
+          // Found duplicates - identify them
+          const duplicates = exerciseNames.filter((name, index) => 
+            exerciseNames.indexOf(name) !== index
+          );
+          const uniqueDuplicates = [...new Set(duplicates)];
+          
+          console.warn('=== VARIETY PRINCIPLE VIOLATED ===');
+          console.warn('Repeated exercises:', uniqueDuplicates);
+          console.warn('Applying 10+ years trainer experience: variety is key');
+          console.warn('===================================');
+          
+          lastError = new Error(`Exercise variety needed: ${uniqueDuplicates.join(', ')} repeated`);
+          
+          messages.push({
+            role: 'assistant',
+            content: response
+          });
+          messages.push({
+            role: 'user',
+            content: `TRAINER EXPERIENCE FEEDBACK: You repeated ${uniqueDuplicates.join(', ')} in this workout.
+
+As a 10+ year experienced trainer, you know that exercise VARIETY is crucial for:
+- Muscle confusion and better development
+- Preventing mental boredom and keeping clients engaged
+- Hitting the same muscle from multiple angles
+- Long-term adherence and results
+
+Instead of repeating "${uniqueDuplicates[0]}", include DIFFERENT exercises that target the same muscle group.
+
+Example: Legs → Barbell Squat + Bulgarian Split Squat + Leg Press (NOT Squat multiple times)
+Example: Chest → Barbell Bench + Incline Dumbbell Press + Cable Flyes (NOT Bench multiple times)
+
+Regenerate this workout with exercise variety - each exercise should appear only once. Think like the experienced trainer you are!`
+          });
+          continue; // Retry
+        }
+      }
 
       // VALIDATE WORKOUT QUALITY
       const validation = await validateWorkout(workoutData, preferences.activityType || 'strength');

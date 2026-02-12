@@ -24,8 +24,9 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
   };
 
   const handleOpenSaveModal = (workout) => {
+    console.log('Opening save modal with workout:', workout);
     setWorkoutToSave(workout);
-    setTemplateName(workout.description || '');
+    setTemplateName(workout.description || workout.summary || '');
     setShowSaveModal(true);
   };
 
@@ -37,13 +38,26 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
 
     const workout = workoutToSave || currentWorkout;
     
+    console.log('Attempting to save workout:', workout);
+    console.log('Workout exercises:', workout?.exercises);
+    
     if (!workout || !workout.exercises || workout.exercises.length === 0) {
       alert('No workout to save. Generate or complete a workout first.');
       return;
     }
 
     try {
-      await saveAsTemplate(user.id, workout, templateName, templateDescription, selectedTags);
+      console.log('Calling saveAsTemplate with:', {
+        userId: user.id,
+        templateName,
+        templateDescription,
+        tags: selectedTags,
+        exerciseCount: workout.exercises.length
+      });
+      
+      const savedTemplate = saveAsTemplate(user.id, workout, templateName, templateDescription, selectedTags);
+      console.log('Template saved successfully:', savedTemplate);
+      
       setShowSaveModal(false);
       setTemplateName('');
       setTemplateDescription('');
@@ -53,7 +67,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
       alert('✅ Template saved successfully!');
     } catch (error) {
       console.error('Error saving template:', error);
-      alert('Failed to save template. Please try again.');
+      alert(`Failed to save template: ${error.message}`);
     }
   };
 
@@ -95,8 +109,29 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
     return null;
   }
 
+  // Debug logging
+  console.log('WorkoutTemplates - currentWorkout:', currentWorkout);
+  console.log('WorkoutTemplates - has exercises:', currentWorkout?.exercises?.length);
+  console.log('WorkoutTemplates - user.workouts count:', user?.workouts?.length);
+
   return (
     <div className="space-y-6">
+      {/* Debug Info (temporary) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-900/30 border border-yellow-500/50 rounded-xl p-4 text-xs font-mono">
+          <div className="font-bold text-yellow-400 mb-2">🔍 Debug Info:</div>
+          <div className="text-yellow-200">
+            currentWorkout: {currentWorkout ? `✅ (${currentWorkout.exercises?.length || 0} exercises)` : '❌ null'}
+          </div>
+          <div className="text-yellow-200">
+            user.workouts: {user?.workouts?.length || 0} completed workouts
+          </div>
+          <div className="text-yellow-200">
+            templates: {templates.length} saved templates
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
