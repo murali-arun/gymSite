@@ -150,6 +150,35 @@ function AppContent() {
     }
   }, [activeUserId, user]);
 
+  const handleRepeatLastWorkout = useCallback(() => {
+    if (!user?.workouts || user.workouts.length === 0) {
+      alert('No previous workouts found to repeat');
+      return;
+    }
+
+    // Get the most recent completed workout
+    const lastWorkout = user.workouts[user.workouts.length - 1];
+    
+    // Create a new workout based on the last one
+    const repeatedWorkout = {
+      id: `workout_${Date.now()}`,
+      date: new Date().toISOString(),
+      exercises: lastWorkout.exercises.map(exercise => ({
+        ...exercise,
+        sets: exercise.sets.map(set => ({
+          ...set,
+          completed: false // Reset completion status
+        }))
+      })),
+      summary: `Repeating: ${lastWorkout.description || 'Previous workout'}`,
+      description: lastWorkout.description,
+      type: lastWorkout.type || 'strength'
+    };
+
+    setCurrentWorkout(repeatedWorkout);
+    setView('tracker');
+  }, [user]);
+
   if (!user) {
     return <UserSelection onUserSelected={handleUserSelected} />;
   }
@@ -377,6 +406,54 @@ function AppContent() {
         <Suspense fallback={<LoadingFallback />}>
           {view === 'home' && (
             <>
+              {/* Quick Start Section */}
+              {user?.workouts && user.workouts.length > 0 && (
+                <div className="mb-6 animate-fade-in">
+                  <h3 className="text-lg font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                    <span>⚡</span>
+                    Quick Start
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Repeat Last Workout */}
+                    <button
+                      onClick={handleRepeatLastWorkout}
+                      className="glass-strong hover:bg-white/15 p-4 rounded-xl transition-all duration-300 hover:scale-102 active:scale-98 border border-primary-500/30 hover:border-primary-400/50 group"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl group-hover:scale-110 transition-transform">🔁</span>
+                        <div className="text-left flex-1">
+                          <div className="font-semibold text-white group-hover:text-primary-300 transition-colors">
+                            Repeat Last Workout
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1 line-clamp-1">
+                            {user.workouts[user.workouts.length - 1].description || 
+                             `${user.workouts[user.workouts.length - 1].exercises?.length || 0} exercises`}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Browse Templates */}
+                    <button
+                      onClick={() => setView('templates')}
+                      className="glass-strong hover:bg-white/15 p-4 rounded-xl transition-all duration-300 hover:scale-102 active:scale-98 border border-accent-purple/30 hover:border-accent-purple/50 group"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl group-hover:scale-110 transition-transform">💾</span>
+                        <div className="text-left flex-1">
+                          <div className="font-semibold text-white group-hover:text-accent-purple transition-colors">
+                            Browse Templates
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            Load saved workouts
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <WorkoutGenerator
                 user={user}
                 onWorkoutGenerated={handleWorkoutGenerated}
