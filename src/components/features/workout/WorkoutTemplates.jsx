@@ -370,6 +370,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
       {/* Save Template Modal */}
       {showSaveModal && (
         <Modal 
+          isOpen={showSaveModal}
           onClose={() => {
             setShowSaveModal(false);
             setWorkoutToSave(null);
@@ -474,6 +475,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
       {/* Template Details Modal */}
       {showTemplateDetails && (
         <Modal
+          isOpen={!!showTemplateDetails}
           onClose={() => setShowTemplateDetails(null)}
           title={showTemplateDetails.name}
         >
