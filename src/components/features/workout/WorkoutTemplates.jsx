@@ -21,9 +21,11 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
   }, [user?.id]);
 
   const loadTemplates = () => {
-    const userTemplates = getTemplates(user.id);
     console.log('📚 Loading templates for user:', user.id);
+    console.log('📚 Raw localStorage data:', localStorage.getItem('workoutTemplates'));
+    const userTemplates = getTemplates(user.id);
     console.log('📚 Templates loaded:', userTemplates);
+    console.log('📚 Templates array length:', userTemplates.length);
     setTemplates(userTemplates);
   };
 
@@ -60,7 +62,8 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
       });
       
       const savedTemplate = saveAsTemplate(user.id, workout, templateName, templateDescription, selectedTags);
-      console.log('Template saved successfully:', savedTemplate);
+      console.log('✅ Template saved successfully:', savedTemplate);
+      console.log('📚 Raw localStorage after save:', localStorage.getItem('workoutTemplates'));
       
       setShowSaveModal(false);
       setTemplateName('');
@@ -71,7 +74,14 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
       // Force reload templates
       const updatedTemplates = getTemplates(user.id);
       console.log('📚 Templates after save:', updatedTemplates);
+      console.log('📚 Number of templates retrieved:', updatedTemplates.length);
+      console.log('📚 Setting templates state with:', updatedTemplates);
       setTemplates(updatedTemplates);
+      
+      // Verify state update
+      setTimeout(() => {
+        console.log('📚 Templates state after setState:', templates);
+      }, 100);
       
       alert('✅ Template saved successfully!');
     } catch (error) {
@@ -562,8 +572,44 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
           </div>
         </Modal>
       )}
+
+      {/* Debug Panel */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-6 bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+          <div className="text-sm text-yellow-300 font-mono space-y-2">
+            <div className="font-bold text-yellow-200 mb-2">🐛 Debug Info:</div>
+            <div>User ID: {user?.id}</div>
+            <div>Templates in state: {templates.length}</div>
+            <div>Template names: {templates.map(t => t.name).join(', ') || 'none'}</div>
+            <div>Current workout: {currentWorkout ? `${currentWorkout.exercises?.length || 0} exercises` : 'none'}</div>
+            <div>localStorage key: workoutTemplates</div>
+            <button
+              onClick={() => {
+                console.log('🔄 Manual refresh triggered');
+                loadTemplates();
+              }}
+              className="mt-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs font-bold"
+            >
+              🔄 Force Refresh Templates
+            </button>
+            <button
+              onClick={() => {
+                const raw = localStorage.getItem('workoutTemplates');
+                console.log('📦 Raw localStorage:', raw);
+                if (raw) {
+                  const parsed = JSON.parse(raw);
+                  console.log('📦 Parsed data:', parsed);
+                  console.log('📦 Keys in storage:', Object.keys(parsed));
+                  console.log(`📦 Data for user ${user.id}:`, parsed[user.id]);
+                }
+              }}
+              className="ml-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs font-bold"
+            >
+              🔍 Inspect localStorage
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-export default WorkoutTemplates;
