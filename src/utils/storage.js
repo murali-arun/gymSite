@@ -333,3 +333,63 @@ export async function deleteUser(userId) {
     throw error;
   }
 }
+
+// ============================================
+// Workout Progress Auto-Save (localStorage)
+// ============================================
+
+const STORAGE_VERSION = 'v1';
+const STORAGE_NAMESPACE = 'gymSite';
+const WORKOUT_PROGRESS_KEY = `${STORAGE_NAMESPACE}_${STORAGE_VERSION}_workout_progress`;
+
+export function saveWorkoutProgress(userId, progressData) {
+  try {
+    const saveData = {
+      userId,
+      savedAt: new Date().toISOString(),
+      ...progressData
+    };
+    localStorage.setItem(WORKOUT_PROGRESS_KEY, JSON.stringify(saveData));
+  } catch (error) {
+    console.error('Error saving workout progress:', error);
+  }
+}
+
+export function loadWorkoutProgress(userId) {
+  try {
+    const saved = localStorage.getItem(WORKOUT_PROGRESS_KEY);
+    if (!saved) return null;
+    
+    const data = JSON.parse(saved);
+    
+    // Only return if it matches the current user
+    if (data.userId !== userId) return null;
+    
+    // Only return if saved within last 24 hours (expired after that)
+    const savedAt = new Date(data.savedAt);
+    const now = new Date();
+    const hoursSince = (now - savedAt) / (1000 * 60 * 60);
+    if (hoursSince > 24) {
+      clearWorkoutProgress();
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error loading workout progress:', error);
+    return null;
+  }
+}
+
+export function clearWorkoutProgress() {
+  try {
+    localStorage.removeItem(WORKOUT_PROGRESS_KEY);
+  } catch (error) {
+    console.error('Error clearing workout progress:', error);
+  }
+}
+
+export function hasWorkoutProgress(userId) {
+  const progress = loadWorkoutProgress(userId);
+  return progress !== null;
+}

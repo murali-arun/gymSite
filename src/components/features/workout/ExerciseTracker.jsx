@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { sendWorkoutFeedback, generateProgressSummary } from '../../../services/api';
-import { saveWorkoutToUser, clearCurrentWorkout, addConversationMessage, shouldSummarize, updateSummary, getUser } from '../../../utils/storage';
+import { saveWorkoutToUser, clearCurrentWorkout, addConversationMessage, shouldSummarize, updateSummary, getUser, saveWorkoutProgress, loadWorkoutProgress, clearWorkoutProgress } from '../../../utils/storage';
 import { updateWorkoutEffectiveness, updateWorkoutProgress } from '../../../utils/workoutHistory';
 import { useCoach } from '../../../contexts/CoachContext';
 
-function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) {
+const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) {
   const [exercises, setExercises] = useState(workout.exercises || []);
   const [completing, setCompleting] = useState(false);
   const { motivate, celebrate } = useCoach();
@@ -23,12 +23,11 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   const [setTimestamps, setSetTimestamps] = useState([]);
   const [restTimer, setRestTimer] = useState(null);
   const [recommendedRestTime, setRecommendedRestTime] = useState(null);
-  const [restElapsedTime, setRestElapsedTime] = useState(0);
-  const [restStartTime, setRestStartTime] = useState(null);
   const timerRef = useRef(null);
   const exerciseTimerRef = useRef(null);
   const restTimerRef = useRef(null);
-  const restElapsedTimerRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const autoDismissTimerRef = useRef(null);
   
   // Pre-workout status
   const [showPreWorkout, setShowPreWorkout] = useState(false);
@@ -61,6 +60,10 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
   // Bilateral exercise tracking (for exercises done on each side)
   const [currentSide, setCurrentSide] = useState('left'); // 'left' or 'right'
   const [completedSides, setCompletedSides] = useState({}); // Track which sides are done for each set
+  
+  // Resume workout modal
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [savedProgress, setSavedProgress] = useState(null);
   
   // Core exercise variations
   const coreExerciseOptions = [
@@ -101,24 +104,6 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       }
     };
   }, [workoutStartTime, workoutStarted, countdown, workoutPaused, pausedTime]);
-
-  // Rest elapsed timer effect (counts UP)
-  useEffect(() => {
-    if (restStartTime && workoutStarted && !workoutPaused) {
-      restElapsedTimerRef.current = setInterval(() => {
-        setRestElapsedTime(Math.floor((Date.now() - restStartTime) / 1000));
-      }, 1000);
-    } else {
-      if (restElapsedTimerRef.current) {
-        clearInterval(restElapsedTimerRef.current);
-      }
-    }
-    return () => {
-      if (restElapsedTimerRef.current) {
-        clearInterval(restElapsedTimerRef.current);
-      }
-    };
-  }, [restStartTime, workoutStarted, workoutPaused]);
 
   // Exercise timer effect
   useEffect(() => {
@@ -162,27 +147,107 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     };
   }, [restTimer, workoutPaused]);
 
-  // Sound effect for rest timer completion
+  // Auto-dismiss rest timer when complete
+  useEffect(() => {
+    if (restTimer === 0) {
+      const timeoutId = setTimeout(() => setRestTimer(null), 2000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [restTimer]);
+
+  // Sound effect for rest timer completion (reuse AudioContext to prevent leaks)
   const playRestCompleteSound = () => {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      const audioContext = audioContextRef.current;
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.error('Audio playback failed:', error);
+    }
   };
 
+  // Cleanup all timers and audio on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all interval timers
+      [timerRef, exerciseTimerRef, restTimerRef].forEach(ref => {
+        if (ref.current) clearInterval(ref.current);
+      });
+      // Clear auto-dismiss timeout
+      if (autoDismissTimerRef.current) {
+        clearTimeout(autoDismissTimerRef.current);
+      }
+      // Close audio context
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  // Check for saved progress on mount
+  useEffect(() => {
+    const progress = loadWorkoutProgress(user.id);
+    if (progress && progress.workout?.id === workout.id) {
+      setSavedProgress(progress);
+      setShowResumeModal(true);
+    }
+  }, []); // Only run once on mount
+
+  // Auto-save workout progress
+  useEffect(() => {
+    // Only save if workout has started and not completed
+    if (workoutStarted && currentExerciseIndex < exercises.length) {
+      const progressData = {
+        workout,
+        exercises,
+        currentExerciseIndex,
+        currentSetIndex,
+        workoutStartTime,
+        pausedTime,
+        elapsedTime: Math.floor((Date.now() - workoutStartTime - pausedTime) / 1000),
+        exerciseStartTime,
+        exerciseElapsedTime: Math.floor((Date.now() - exerciseStartTime) / 1000),
+        setTimestamps,
+        currentSide,
+        completedSides,
+        preWorkoutData
+      };
+      saveWorkoutProgress(user.id, progressData);
+    }
+  }, [
+    workoutStarted,
+    exercises,
+    currentExerciseIndex,
+    currentSetIndex,
+    currentSide,
+    completedSides,
+    user.id,
+    workout,
+    workoutStartTime,
+    pausedTime,
+    exerciseStartTime,
+    preWorkoutData
+    // REMOVED: elapsedTime, exerciseElapsedTime (to prevent saving every second)
+  ]);
+
   // Toggle pause/resume
-  const togglePause = () => {
+  const togglePause = useCallback(() => {
     if (workoutPaused) {
       // Resuming - adjust the paused time accumulator
       const pauseDuration = Date.now() - (pauseStartTimeRef.current || Date.now());
@@ -193,7 +258,7 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       pauseStartTimeRef.current = Date.now();
       setWorkoutPaused(true);
     }
-  };
+  }, [workoutPaused]);
   
   const pauseStartTimeRef = useRef(null);
 
@@ -220,19 +285,15 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleStartWorkout = () => {
+  const handleStartWorkout = useCallback(() => {
     setShowPreWorkout(true);
-  };
+  }, []);
   
-  const confirmStartWorkout = () => {
+  const confirmStartWorkout = useCallback(() => {
     setShowPreWorkout(false);
     
     // Show coach motivation when starting workout!
     motivate('workoutStart');
-    
-    // Reset rest timer
-    setRestStartTime(null);
-    setRestElapsedTime(0);
     
     setCountdown(5);
     const countdownInterval = setInterval(() => {
@@ -248,7 +309,39 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         return prev - 1;
       });
     }, 1000);
-  };
+  }, [motivate]);
+
+  const handleResumeWorkout = useCallback(() => {
+    if (!savedProgress) return;
+    
+    setShowResumeModal(false);
+    
+    // Restore all the saved state
+    setExercises(savedProgress.exercises);
+    setCurrentExerciseIndex(savedProgress.currentExerciseIndex);
+    setCurrentSetIndex(savedProgress.currentSetIndex);
+    setWorkoutStartTime(savedProgress.workoutStartTime);
+    setPausedTime(savedProgress.pausedTime);
+    setExerciseStartTime(savedProgress.exerciseStartTime);
+    setSetTimestamps(savedProgress.setTimestamps);
+    setCurrentSide(savedProgress.currentSide || 'left');
+    setCompletedSides(savedProgress.completedSides || {});
+    if (savedProgress.preWorkoutData) {
+      setPreWorkoutData(savedProgress.preWorkoutData);
+    }
+    
+    // Start the workout immediately
+    setWorkoutStarted(true);
+    
+    // Show coach motivation
+    motivate('workoutStart');
+  }, [savedProgress, motivate]);
+
+  const handleStartFresh = useCallback(() => {
+    setShowResumeModal(false);
+    clearWorkoutProgress();
+    setSavedProgress(null);
+  }, []);
 
   const handleNextSet = () => {
     const currentExercise = exercises[currentExerciseIndex];
@@ -282,10 +375,6 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     updated[currentExerciseIndex].sets[currentSetIndex].completed = true;
     setExercises(updated);
 
-    // Start rest elapsed timer (counts UP)
-    setRestStartTime(Date.now());
-    setRestElapsedTime(0);
-
     // Move to next set or exercise
     if (currentSetIndex < currentExercise.sets.length - 1) {
       // Next set in same exercise - start rest timer
@@ -302,9 +391,6 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         // Reset exercise timer
         setExerciseStartTime(Date.now());
         setExerciseElapsedTime(0);
-        // Reset rest elapsed timer
-        setRestStartTime(null);
-        setRestElapsedTime(0);
         // Start rest timer for transition
         const nextExercise = exercises[currentExerciseIndex + 1];
         const restTime = nextExercise.recommendedRest || 120; // Longer rest between exercises
@@ -314,8 +400,6 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         // Workout complete
         setWorkoutStarted(false);
         setRestTimer(null);
-        setRestStartTime(null);
-        setRestElapsedTime(0);
       }
     }
   };
@@ -332,16 +416,16 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
     return currentTimestamp.elapsedSeconds - prevTimestamp.elapsedSeconds;
   };
 
-  const updateSet = (exerciseIndex, setIndex, field, value) => {
+  const updateSet = useCallback((exerciseIndex, setIndex, field, value) => {
     const updated = [...exercises];
     if (!updated[exerciseIndex].sets[setIndex]) {
       updated[exerciseIndex].sets[setIndex] = {};
     }
     updated[exerciseIndex].sets[setIndex][field] = value;
     setExercises(updated);
-  };
+  }, [exercises]);
 
-  const toggleSetComplete = (exerciseIndex, setIndex) => {
+  const toggleSetComplete = useCallback((exerciseIndex, setIndex) => {
     const updated = [...exercises];
     const wasCompleted = updated[exerciseIndex].sets[setIndex].completed;
     updated[exerciseIndex].sets[setIndex].completed = !wasCompleted;
@@ -385,9 +469,9 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
         setTimeout(() => motivate('exerciseComplete'), 1000);
       }
     }
-  };
+  }, [exercises, user.workouts, celebrate, motivate]);
 
-  const addSet = (exerciseIndex) => {
+  const addSet = useCallback((exerciseIndex) => {
     const updated = [...exercises];
     const lastSet = updated[exerciseIndex].sets[updated[exerciseIndex].sets.length - 1];
     updated[exerciseIndex].sets.push({
@@ -402,15 +486,24 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       notes: ''
     });
     setExercises(updated);
-  };
+  }, [exercises]);
 
-  const handleCompleteClick = () => {
+  const handleCancel = useCallback(() => {
+    clearWorkoutProgress();
+    onCancel();
+  }, [onCancel]);
+
+  const handleCompleteClick = useCallback(() => {
     setShowPostWorkout(true);
-  };
+  }, []);
   
   const handleComplete = async () => {
     setShowPostWorkout(false);
     setCompleting(true);
+    
+    // Clear saved progress since workout is completing
+    clearWorkoutProgress();
+    
     try {
       const completedWorkout = {
         ...workout,
@@ -591,6 +684,57 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Resume Workout Modal */}
+      {showResumeModal && savedProgress && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-blue-900/90 to-purple-900/90 border-2 border-blue-500 rounded-2xl p-8 max-w-md w-full">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">💪</div>
+              <h3 className="text-3xl font-bold text-white mb-2">Workout in Progress!</h3>
+              <p className="text-gray-300">
+                Found a saved workout from {new Date(savedProgress.savedAt).toLocaleString()}
+              </p>
+            </div>
+            
+            <div className="bg-black/30 rounded-lg p-4 mb-6 space-y-2 text-sm">
+              <div className="flex justify-between text-gray-300">
+                <span>Progress:</span>
+                <span className="text-white font-semibold">
+                  Exercise {savedProgress.currentExerciseIndex + 1} of {savedProgress.exercises.length}
+                </span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Current:</span>
+                <span className="text-white font-semibold">
+                  {savedProgress.exercises[savedProgress.currentExerciseIndex]?.name}
+                </span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Set:</span>
+                <span className="text-white font-semibold">
+                  {savedProgress.currentSetIndex + 1} of {savedProgress.exercises[savedProgress.currentExerciseIndex]?.sets.length}
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <button
+                onClick={handleResumeWorkout}
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-lg transition-all shadow-lg"
+              >
+                ▶ Resume Workout
+              </button>
+              <button
+                onClick={handleStartFresh}
+                className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all"
+              >
+                Start Fresh
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -799,7 +943,13 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
       {/* Timer Display */}
       {workoutStarted && countdown === null && (
-        <div className="fixed top-4 right-2 md:top-20 md:right-4 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg px-2 py-1.5 md:px-4 md:py-2 z-40 max-w-[95vw]">
+        <div 
+          className="fixed right-2 md:right-4 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg px-2 py-1.5 md:px-4 md:py-2 z-40 max-w-[95vw]"
+          style={{
+            top: 'max(1rem, env(safe-area-inset-top))',
+            '@media (min-width: 768px)': { top: '5rem' }
+          }}
+        >
           <div className="flex gap-2 md:gap-4 items-center">
             <button
               onClick={togglePause}
@@ -816,12 +966,6 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
               <div className="text-[10px] md:text-xs text-blue-400 mb-0.5 md:mb-1">Exercise</div>
               <div className="text-lg md:text-2xl font-bold text-blue-400 font-mono">{formatTime(exerciseElapsedTime)}</div>
             </div>
-            {restStartTime && (
-              <div className="border-l border-gray-600 pl-2 md:pl-4">
-                <div className="text-[10px] md:text-xs text-red-400 mb-0.5 md:mb-1">Rest</div>
-                <div className="text-lg md:text-2xl font-bold text-red-400 font-mono">{formatTime(restElapsedTime)}</div>
-              </div>
-            )}
           </div>
           {workoutPaused && (
             <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-yellow-400 text-center font-semibold">
@@ -833,7 +977,13 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
 
       {/* Rest Timer */}
       {workoutStarted && restTimer !== null && (
-        <div className="fixed top-24 md:top-20 left-1/2 transform -translate-x-1/2 z-50 w-[90vw] md:w-auto max-w-sm">
+        <div 
+          className="fixed left-1/2 transform -translate-x-1/2 z-50 w-[90vw] md:w-auto max-w-sm"
+          style={{
+            top: 'max(6rem, calc(env(safe-area-inset-top) + 5rem))',
+            '@media (min-width: 768px)': { top: '5rem' }
+          }}
+        >
           <div className={`backdrop-blur-sm border-2 rounded-xl md:rounded-2xl px-4 py-3 md:px-8 md:py-6 transition-all ${
             restTimer === 0 
               ? 'bg-green-500/20 border-green-500 animate-pulse' 
@@ -1030,7 +1180,7 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
               <div className="mb-4 md:mb-5">
                 <label className="block text-xs font-medium text-gray-400 mb-2">Weight (lbs)</label>
                 <div className="grid grid-cols-3 gap-1.5 md:gap-2">
-                  {[-5, 0, 5].map((offset) => {
+                  {[-2.5, 0, 2.5].map((offset) => {
                     const currentWeight = exercises[currentExerciseIndex].sets[currentSetIndex].weight || 0;
                     const baseWeight = currentSetIndex > 0 
                       ? exercises[currentExerciseIndex].sets[0].weight || 0
@@ -1269,19 +1419,19 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
                       <label className="block text-xs text-gray-400 mb-1">Weight</label>
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => updateSet(exIndex, setIndex, 'weight', Math.max(0, (set.weight || 0) - 5))}
+                          onClick={() => updateSet(exIndex, setIndex, 'weight', Math.max(0, (set.weight || 0) - 2.5))}
                           className="w-7 h-7 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded text-xs font-bold transition-all active:scale-95"
                         >
-                          −5
+                          −2.5
                         </button>
                         <div className="flex-1 px-2 py-1.5 bg-gray-600 rounded text-white text-center text-sm font-semibold">
                           {set.weight || 0}
                         </div>
                         <button
-                          onClick={() => updateSet(exIndex, setIndex, 'weight', (set.weight || 0) + 5)}
+                          onClick={() => updateSet(exIndex, setIndex, 'weight', (set.weight || 0) + 2.5)}
                           className="w-7 h-7 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded text-xs font-bold transition-all active:scale-95"
                         >
-                          +5
+                          +2.5
                         </button>
                       </div>
                     </div>
@@ -1342,7 +1492,7 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
           </button>
         )}
         <button
-          onClick={onCancel}
+          onClick={handleCancel}
           className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-4 px-6 rounded-lg transition-all"
         >
           {workoutStarted ? 'Exit Workout' : 'Cancel'}
@@ -1357,6 +1507,6 @@ function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) 
       </div>
     </div>
   );
-}
+});
 
 export default ExerciseTracker;

@@ -4,6 +4,7 @@ import { CoachAvatar, CoachSelector } from './components/features/coach';
 import { CoachProvider } from './contexts/CoachContext';
 import { getUser, getActiveUserId, setActiveUserId, addWorkout, addConversationMessage } from './utils/storage';
 import { AnimatePresence } from 'framer-motion';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load heavy components for better initial load performance
 const WorkoutGenerator = lazy(() => import('./components/features/workout/WorkoutGenerator'));
@@ -366,17 +367,27 @@ function AppContent() {
           )}
           
           {view === 'tracker' && currentWorkout && (
-            <ExerciseTracker
-              user={user}
-              workout={currentWorkout}
-              onComplete={handleWorkoutComplete}
-              onRegenerate={handleRegenerateWorkout}
-              onCancel={() => {
+            <ErrorBoundary
+              title="Workout Tracker Error"
+              message="Don't worry! Your workout progress is auto-saved. Please try refreshing."
+              onReset={() => {
                 setCurrentWorkout(null);
                 setView('home');
                 refreshUserData();
               }}
-            />
+            >
+              <ExerciseTracker
+                user={user}
+                workout={currentWorkout}
+                onComplete={handleWorkoutComplete}
+                onRegenerate={handleRegenerateWorkout}
+                onCancel={() => {
+                  setCurrentWorkout(null);
+                  setView('home');
+                  refreshUserData();
+                }}
+              />
+            </ErrorBoundary>
           )}
         
           {view === 'history' && (
