@@ -17,9 +17,18 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
 
   useEffect(() => {
     if (user?.id) {
-      // Clean up any corrupted templates on first load
-      cleanupTemplates();
-      loadTemplates();
+      try {
+        // Clean up any corrupted templates on first load
+        console.log('🔧 Running template cleanup...');
+        cleanupTemplates();
+        console.log('✅ Cleanup complete, loading templates...');
+        loadTemplates();
+      } catch (error) {
+        console.error('❌ Error during startup:', error);
+        // If cleanup fails, clear corrupted data
+        localStorage.removeItem('workoutTemplates');
+        setTemplates([]);
+      }
     }
   }, [user?.id]);
 
@@ -95,7 +104,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
 
   const handleLoadTemplate = async (templateId) => {
     try {
-      const workout = loadTemplate(user.id, templateId, user.workouts);
+      const workout = loadTemplate(user.id, templateId, user.workouts || []);
       onStartWorkout(workout);
       loadTemplates(); // Refresh to update "last used"
     } catch (error) {
@@ -254,7 +263,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
                 <div className="text-left">
                   <div>{generatingAITemplates ? 'Analyzing Your Workouts...' : 'AI: Generate Templates from History'}</div>
                   <div className="text-sm text-purple-100 font-normal">
-                    {generatingAITemplates ? 'Finding patterns in your training' : `Adds templates (never deletes) • ${user.workouts.length} workouts`}
+                    {generatingAITemplates ? 'Finding patterns in your training' : `Adds templates (never deletes) • ${user.workouts?.length || 0} workouts`}
                   </div>
                 </div>
               </div>
@@ -267,7 +276,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
           <div className="mt-6">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-semibold text-gray-300">💾 Save from Workout History</h3>
-              {user.workouts.length > 6 && (
+              {user.workouts && user.workouts.length > 6 && (
                 <button
                   onClick={() => setShowAllWorkouts(!showAllWorkouts)}
                   className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
@@ -277,7 +286,7 @@ const WorkoutTemplates = ({ user, onStartWorkout, currentWorkout }) => {
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {(showAllWorkouts ? user.workouts : user.workouts.slice(-6)).reverse().map((workout, idx) => (
+              {(user.workouts ? (showAllWorkouts ? user.workouts : user.workouts.slice(-6)) : []).reverse().map((workout, idx) => (
                 <button
                   key={workout.id || idx}
                   onClick={() => handleOpenSaveModal(workout)}
