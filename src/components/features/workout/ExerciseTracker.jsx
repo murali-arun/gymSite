@@ -79,12 +79,24 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
     'Hollow Body Hold'
   ];
   
-  // Helper function to detect bodyweight exercises
-  const isBodyweightExercise = (exercise) => {
+  // Helper function to detect bodyweight exercises  const isBodyweightExercise = (exercise) => {
     const bodyweightKeywords = ['plank', 'push-up', 'pull-up', 'dip', 'burpee', 'jump', 'crunch', 'sit-up', 'ab', 'core', 'dead bug', 'toe touch', 'bicycle', 'mountain climber', 'russian twist', 'leg raise', 'bird dog', 'hollow'];
     const exerciseName = exercise.name.toLowerCase();
     return bodyweightKeywords.some(keyword => exerciseName.includes(keyword)) || 
            (exercise.sets && exercise.sets.every(set => set.weight === 0));
+  };
+
+  // Helper function to get metric info
+  const getMetricInfo = (exercise) => {
+    const metric = exercise.metric || 'reps';
+    switch(metric) {
+      case 'time':
+        return { label: 'Time', unit: 'sec', singular: 'second', plural: 'seconds' };
+      case 'distance':
+        return { label: 'Distance', unit: 'm', singular: 'meter', plural: 'meters' };
+      default:
+        return { label: 'Reps', unit: 'reps', singular: 'rep', plural: 'reps' };
+    }
   };
 
   // Timer effect for elapsed time
@@ -1216,16 +1228,24 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
               </div>
             )}
 
-            {/* Reps Selection */}
+            {/* Reps/Time/Distance Selection */}
             <div className="mb-3 md:mb-4">
               <label className="block text-xs font-medium text-gray-400 mb-2">
-                {exercises[currentExerciseIndex].perSide ? `Reps (per ${currentSide} side)` : 'Reps'}
+                {(() => {
+                  const metricInfo = getMetricInfo(exercises[currentExerciseIndex]);
+                  if (exercises[currentExerciseIndex].perSide) {
+                    return `${metricInfo.label} (per ${currentSide} side)`;
+                  }
+                  return metricInfo.label;
+                })()}
               </label>
               <div className="flex items-center gap-2 md:gap-3 bg-gray-700/50 rounded-lg p-2">
                 <button
                   onClick={() => {
-                    const currentReps = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
-                    updateSet(currentExerciseIndex, currentSetIndex, 'reps', Math.max(0, currentReps - 1));
+                    const currentValue = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
+                    const metric = exercises[currentExerciseIndex].metric || 'reps';
+                    const decrement = metric === 'time' ? 5 : 1; // For time, decrease by 5 seconds
+                    updateSet(currentExerciseIndex, currentSetIndex, 'reps', Math.max(0, currentValue - decrement));
                   }}
                   className="w-9 h-9 md:w-10 md:h-10 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded-md font-bold text-lg transition-all active:scale-95"
                 >
@@ -1236,15 +1256,22 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
                     {exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0}
                   </div>
                   <div className="text-[10px] md:text-xs text-gray-400">
-                    {exercises[currentExerciseIndex].perSide 
-                      ? `reps on ${currentSide}` 
-                      : 'reps'}
+                    {(() => {
+                      const metricInfo = getMetricInfo(exercises[currentExerciseIndex]);
+                      const value = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
+                      if (exercises[currentExerciseIndex].perSide) {
+                        return `${metricInfo.unit} on ${currentSide}`;
+                      }
+                      return value === 1 ? metricInfo.singular : metricInfo.plural;
+                    })()}
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    const currentReps = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
-                    updateSet(currentExerciseIndex, currentSetIndex, 'reps', currentReps + 1);
+                    const currentValue = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
+                    const metric = exercises[currentExerciseIndex].metric || 'reps';
+                    const increment = metric === 'time' ? 5 : 1; // For time, increase by 5 seconds
+                    updateSet(currentExerciseIndex, currentSetIndex, 'reps', currentValue + increment);
                   }}
                   className="w-9 h-9 md:w-10 md:h-10 bg-gray-600 hover:bg-gray-500 active:bg-gray-400 text-white rounded-md font-bold text-lg transition-all active:scale-95"
                 >
@@ -1253,7 +1280,11 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
               </div>
               {exercises[currentExerciseIndex].perSide && (
                 <div className="mt-1.5 md:mt-2 text-[10px] md:text-xs text-purple-400 text-center">
-                  💡 You'll do {exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0} reps on each side
+                  {(() => {
+                    const metricInfo = getMetricInfo(exercises[currentExerciseIndex]);
+                    const value = exercises[currentExerciseIndex].sets[currentSetIndex].reps || 0;
+                    return `💡 You'll do ${value} ${metricInfo.unit} on each side`;
+                  })()}
                 </div>
               )}
             </div>

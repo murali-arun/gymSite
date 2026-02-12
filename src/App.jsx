@@ -11,9 +11,11 @@ const WorkoutGenerator = lazy(() => import('./components/features/workout/Workou
 const ExerciseTracker = lazy(() => import('./components/features/workout/ExerciseTracker'));
 const History = lazy(() => import('./components/features/workout/History'));
 const ManualWorkoutLog = lazy(() => import('./components/features/workout/ManualWorkoutLog'));
+const WorkoutTemplates = lazy(() => import('./components/features/workout/WorkoutTemplates'));
 const Progress = lazy(() => import('./components/features/progress/Progress'));
 const ProgressDashboard = lazy(() => import('./components/features/progress/ProgressDashboard'));
 const Achievements = lazy(() => import('./components/features/progress/Achievements'));
+const StrengthStandards = lazy(() => import('./components/features/progress/StrengthStandards'));
 
 // Loading component
 const LoadingFallback = () => (
@@ -28,7 +30,7 @@ const LoadingFallback = () => (
 function AppContent() {
   const [activeUserId, setActiveUserIdState] = useState(null);
   const [user, setUser] = useState(null);
-  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog
+  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog, templates, strength
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const [showCoachSelector, setShowCoachSelector] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -236,6 +238,26 @@ function AppContent() {
                 History
               </button>
               <button
+                onClick={() => setView('templates')}
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
+                  view === 'templates'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
+                }`}
+              >
+                💾 Templates
+              </button>
+              <button
+                onClick={() => setView('strength')}
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
+                  view === 'strength'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
+                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
+                }`}
+              >
+                💪 1RM
+              </button>
+              <button
                 onClick={handleLogout}
                 className="px-4 py-2 rounded-full font-medium glass-strong hover:bg-white/15 text-gray-300 transition-all duration-300 hover:text-white hover:scale-105 active:scale-95"
               >
@@ -317,6 +339,26 @@ function AppContent() {
                   }`}
                 >
                   📜 History
+                </button>
+                <button
+                  onClick={() => { setView('templates'); setShowMobileMenu(false); }}
+                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
+                    view === 'templates'
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                      : 'glass-strong hover:bg-white/15 text-gray-300'
+                  }`}
+                >
+                  💾 Templates
+                </button>
+                <button
+                  onClick={() => { setView('strength'); setShowMobileMenu(false); }}
+                  className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-left active:scale-98 ${
+                    view === 'strength'
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30'
+                      : 'glass-strong hover:bg-white/15 text-gray-300'
+                  }`}
+                >
+                  💪 1RM Calculator
                 </button>
                 <button
                   onClick={() => { handleLogout(); setShowMobileMenu(false); }}
@@ -412,6 +454,20 @@ function AppContent() {
           
           {view === 'dashboard' && (
             <ProgressDashboard
+              user={user}
+            />
+          )}
+          
+          {view === 'templates' && (
+            <WorkoutTemplates
+              user={user}
+              currentWorkout={currentWorkout}
+              onStartWorkout={handleWorkoutGenerated}
+            />
+          )}
+          
+          {view === 'strength' && (
+            <StrengthStandards
               user={user}
             />
           )}

@@ -192,29 +192,67 @@ const History = memo(function History({ user, onRefresh }) {
                   )}
 
                   {/* Exercises */}
-                  {workout.exercises?.map((exercise, exIndex) => (
-                    <div key={exIndex} className="bg-gray-600/30 rounded-lg p-4">
-                      <h4 className="font-semibold text-white mb-3">{exercise.name}</h4>
-                      <div className="space-y-2">
-                        {exercise.sets?.map((set, setIndex) => (
-                          <div
-                            key={setIndex}
-                            className="flex items-center justify-between text-sm bg-gray-700/50 rounded px-3 py-2"
-                          >
-                            <span className="text-gray-400">Set {setIndex + 1}</span>
-                            <div className="flex gap-4 text-gray-300">
-                              <span>{set.weight} lbs</span>
-                              <span>×</span>
-                              <span>{set.reps} reps</span>
-                              {set.completed && (
-                                <span className="text-green-400">✓</span>
-                              )}
+                  {workout.exercises?.map((exercise, exIndex) => {
+                    const metric = exercise.metric || 'reps';
+                    let metricLabel, metricUnit;
+                    
+                    switch(metric) {
+                      case 'time':
+                        metricLabel = 'Time';
+                        metricUnit = 'sec';
+                        break;
+                      case 'distance':
+                        metricLabel = 'Distance';
+                        metricUnit = 'm';
+                        break;
+                      default:
+                        metricLabel = 'Reps';
+                        metricUnit = 'reps';
+                    }
+                    
+                    return (
+                      <div key={exIndex} className="bg-gray-600/30 rounded-lg p-4">
+                        <h4 className="font-semibold text-white mb-3">
+                          {exercise.name}
+                          {exercise.perSide && (
+                            <span className="ml-2 text-xs text-purple-400">(per side)</span>
+                          )}
+                        </h4>
+                        <div className="space-y-2">
+                          {exercise.sets?.map((set, setIndex) => (
+                            <div
+                              key={setIndex}
+                              className="flex items-center justify-between text-sm bg-gray-700/50 rounded px-3 py-2"
+                            >
+                              <span className="text-gray-400">Set {setIndex + 1}</span>
+                              <div className="flex gap-4 text-gray-300">
+                                {metric === 'time' ? (
+                                  <>
+                                    <span>{set.reps} {metricUnit}</span>
+                                  </>
+                                ) : metric === 'distance' ? (
+                                  <>
+                                    <span>{set.weight} lbs</span>
+                                    <span>→</span>
+                                    <span>{set.reps} {metricUnit}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>{set.weight} lbs</span>
+                                    <span>×</span>
+                                    <span>{set.reps} {metricUnit}</span>
+                                  </>
+                                )}
+                                {set.completed && (
+                                  <span className="text-green-400">✓</span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
