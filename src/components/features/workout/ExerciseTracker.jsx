@@ -79,7 +79,8 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
     'Hollow Body Hold'
   ];
   
-  // Helper function to detect bodyweight exercises  const isBodyweightExercise = (exercise) => {
+  // Helper function to detect bodyweight exercises
+  const isBodyweightExercise = (exercise) => {
     const bodyweightKeywords = ['plank', 'push-up', 'pull-up', 'dip', 'burpee', 'jump', 'crunch', 'sit-up', 'ab', 'core', 'dead bug', 'toe touch', 'bicycle', 'mountain climber', 'russian twist', 'leg raise', 'bird dog', 'hollow'];
     const exerciseName = exercise.name.toLowerCase();
     return bodyweightKeywords.some(keyword => exerciseName.includes(keyword)) || 
