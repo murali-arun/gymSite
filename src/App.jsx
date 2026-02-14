@@ -32,6 +32,7 @@ function AppContent() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog, templates, strength
   const [currentWorkout, setCurrentWorkout] = useState(null);
+  const [workoutToManualLog, setWorkoutToManualLog] = useState(null); // For pre-filling manual log
   const [showCoachSelector, setShowCoachSelector] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [workoutDropdownOpen, setWorkoutDropdownOpen] = useState(false);
@@ -98,6 +99,11 @@ function AppContent() {
     setCurrentWorkout(null);
     setView('home');
   }, []);
+  
+  const handleManualLogFromTracker = useCallback((workout) => {
+    setWorkoutToManualLog(workout);
+    setView('manualLog');
+  }, []);
 
   const handleWorkoutComplete = useCallback(async () => {
     // Refresh user data
@@ -140,6 +146,12 @@ function AppContent() {
           const exampleSet = e.sets[0];
           return `${e.name}: ${totalSets} sets of ${exampleSet.reps} reps @ ${exampleSet.weight}lbs`;
         }).join(', ');
+        
+        // Add duration if provided
+        if (workout.totalDuration && workout.totalDuration > 0) {
+          const minutes = Math.floor(workout.totalDuration / 60);
+          workoutDetails += ` - Total duration: ${minutes} minutes`;
+        }
       }
       
       await addConversationMessage(
@@ -154,7 +166,8 @@ function AppContent() {
         feedback
       );
       
-      // Refresh user data and return to home
+      // Clear pre-filled workout and refresh user data
+      setWorkoutToManualLog(null);
       await refreshUserData();
       setView('home');
       
@@ -163,7 +176,7 @@ function AppContent() {
       console.error('Error saving manual workout:', error);
       alert('Failed to save workout. Please try again.');
     }
-  }, [activeUserId, user]);
+  }, [activeUserId, user, refreshUserData]);
 
   const handleRepeatLastWorkout = useCallback(() => {
     if (!user?.workouts || user.workouts.length === 0) {
@@ -546,7 +559,11 @@ function AppContent() {
             <ManualWorkoutLog
               user={user}
               onWorkoutLogged={handleManualWorkoutLogged}
-              onCancel={() => setView('home')}
+              onCancel={() => {
+                setView('home');
+                setWorkoutToManualLog(null);
+              }}
+              prefilledWorkout={workoutToManualLog}
             />
           )}
           
@@ -565,6 +582,7 @@ function AppContent() {
                 workout={currentWorkout}
                 onComplete={handleWorkoutComplete}
                 onRegenerate={handleRegenerateWorkout}
+                onManualLog={handleManualLogFromTracker}
                 onCancel={() => {
                   setCurrentWorkout(null);
                   setView('home');

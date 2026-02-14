@@ -1,20 +1,55 @@
 import React, { useState } from 'react';
 import { useCoach } from '../../../contexts/CoachContext';
 
-function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
+function ManualWorkoutLog({ user, onWorkoutLogged, onCancel, prefilledWorkout }) {
   const [workoutType, setWorkoutType] = useState('strength'); // 'strength' or 'cardio'
-  const [workoutDetails, setWorkoutDetails] = useState({
-    date: new Date().toISOString().split('T')[0],
-    description: '',
-    exercises: [{ name: '', sets: '', reps: '', weight: '', perSide: false }],
-    cardio: {
-      activity: '',
-      duration: '',
-      distance: '',
-      intensity: 'moderate',
-      notes: ''
+  
+  // Pre-fill from provided workout if available
+  const getInitialDetails = () => {
+    if (prefilledWorkout) {
+      const durationMinutes = prefilledWorkout.totalDuration 
+        ? Math.floor(prefilledWorkout.totalDuration / 60)
+        : '';
+      
+      const exercises = prefilledWorkout.exercises?.map(ex => ({
+        name: ex.name || '',
+        sets: ex.sets?.length || '',
+        reps: ex.sets?.[0]?.reps || '',
+        weight: ex.sets?.[0]?.weight || '',
+        perSide: ex.perSide || false
+      })) || [{ name: '', sets: '', reps: '', weight: '', perSide: false }];
+      
+      return {
+        date: new Date().toISOString().split('T')[0],
+        description: prefilledWorkout.description || prefilledWorkout.aiSuggestion || '',
+        duration: durationMinutes,
+        exercises: exercises,
+        cardio: {
+          activity: '',
+          duration: '',
+          distance: '',
+          intensity: 'moderate',
+          notes: ''
+        }
+      };
     }
-  });
+    
+    return {
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      duration: '',
+      exercises: [{ name: '', sets: '', reps: '', weight: '', perSide: false }],
+      cardio: {
+        activity: '',
+        duration: '',
+        distance: '',
+        intensity: 'moderate',
+        notes: ''
+      }
+    };
+  };
+  
+  const [workoutDetails, setWorkoutDetails] = useState(getInitialDetails());
   const [loading, setLoading] = useState(false);
   const { motivate } = useCoach();
 
@@ -83,6 +118,7 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
           date: workoutDetails.date,
           type: 'strength',
           exercises: validExercises,
+          totalDuration: workoutDetails.duration ? parseInt(workoutDetails.duration) * 60 : 0, // Convert to seconds
           aiSuggestion: `Manual workout log: ${workoutDetails.description || 'Workout logged manually'}`,
           isManualLog: true,
           description: workoutDetails.description,
@@ -104,8 +140,15 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
       <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-3xl font-bold text-white mb-2">Log Manual Workout</h2>
-            <p className="text-gray-400">Track workouts you did outside the app</p>
+            <h2 className="text-3xl font-bold text-white mb-2">
+              {prefilledWorkout ? 'Log This Workout Manually' : 'Log Manual Workout'}
+            </h2>
+            <p className="text-gray-400">
+              {prefilledWorkout 
+                ? '✓ Pre-filled with your workout data - adjust if needed'
+                : 'Track workouts you did outside the app'
+              }
+            </p>
           </div>
           {onCancel && (
             <button
@@ -279,6 +322,24 @@ function ManualWorkoutLog({ user, onWorkoutLogged, onCancel }) {
           ) : (
             // Strength Training Form
             <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Workout Duration (optional)
+              </label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="number"
+                  placeholder="45"
+                  value={workoutDetails.duration}
+                  onChange={(e) => setWorkoutDetails({ ...workoutDetails, duration: e.target.value })}
+                  min="1"
+                  className="w-32 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-gray-400">minutes</span>
+                <span className="text-xs text-gray-500 ml-2">💡 How long did the workout take?</span>
+              </div>
+            </div>
+            
             <div className="flex justify-between items-center">
               <label className="block text-sm font-medium text-gray-300">
                 Exercises

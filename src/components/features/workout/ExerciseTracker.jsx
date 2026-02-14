@@ -4,7 +4,7 @@ import { saveWorkoutToUser, clearCurrentWorkout, addConversationMessage, shouldS
 import { updateWorkoutEffectiveness, updateWorkoutProgress } from '../../../utils/workoutHistory';
 import { useCoach } from '../../../contexts/CoachContext';
 
-const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel }) {
+const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel, onManualLog }) {
   const [exercises, setExercises] = useState(workout.exercises || []);
   const [completing, setCompleting] = useState(false);
   const { motivate, celebrate } = useCoach();
@@ -1061,9 +1061,9 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
               
               <button
                 onClick={() => setRestTimer(null)}
-                className="mt-2 md:mt-3 text-[10px] md:text-xs text-gray-400 hover:text-white underline"
+                className="mt-3 md:mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 md:py-4 px-6 md:px-8 rounded-xl text-base md:text-lg transition-all shadow-lg"
               >
-                Dismiss
+                ✕ Cancel Rest Timer
               </button>
             </div>
           </div>
@@ -1513,29 +1513,53 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
       ))}
 
       {/* Action Buttons */}
-      <div className="flex gap-3">
-        {!workoutStarted && (
+      <div className="space-y-3">
+        <div className="flex gap-3">
+          {!workoutStarted && (
+            <button
+              onClick={onRegenerate}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-4 px-6 rounded-lg transition-all"
+              title="Generate a new workout"
+            >
+              🔄 Regenerate
+            </button>
+          )}
           <button
-            onClick={onRegenerate}
-            className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-4 px-6 rounded-lg transition-all"
-            title="Generate a new workout"
+            onClick={handleCancel}
+            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-4 px-6 rounded-lg transition-all"
           >
-            🔄 Regenerate
+            {workoutStarted ? 'Exit Workout' : 'Cancel'}
           </button>
+          <button
+            onClick={handleCompleteClick}
+            disabled={completing || completedSets === 0}
+            className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-900/50"
+          >
+            {completing ? 'Saving...' : '✓ Complete Workout'}
+          </button>
+        </div>
+        
+        {/* Manual Log Option */}
+        {onManualLog && (
+          <div className="bg-orange-900/30 border border-orange-700/50 rounded-xl p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1">
+                <div className="text-orange-400 font-semibold text-sm mb-1">⚠️ Save Issues?</div>
+                <div className="text-gray-300 text-xs">If the automatic save isn't working, manually log this workout with time</div>
+              </div>
+              <button
+                onClick={() => onManualLog({
+                  ...workout,
+                  exercises,
+                  totalDuration: elapsedTime
+                })}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-all whitespace-nowrap text-sm"
+              >
+                📝 Manual Log
+              </button>
+            </div>
+          </div>
         )}
-        <button
-          onClick={handleCancel}
-          className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-4 px-6 rounded-lg transition-all"
-        >
-          {workoutStarted ? 'Exit Workout' : 'Cancel'}
-        </button>
-        <button
-          onClick={handleComplete}
-          disabled={completing || completedSets === 0}
-          className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-900/50"
-        >
-          {completing ? 'Saving...' : '✓ Complete Workout'}
-        </button>
       </div>
     </div>
   );
