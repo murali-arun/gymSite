@@ -3,6 +3,7 @@ import { sendWorkoutFeedback, generateProgressSummary } from '../../../services/
 import { saveWorkoutToUser, clearCurrentWorkout, addConversationMessage, shouldSummarize, updateSummary, getUser, saveWorkoutProgress, loadWorkoutProgress, clearWorkoutProgress } from '../../../utils/storage';
 import { updateWorkoutEffectiveness, updateWorkoutProgress } from '../../../utils/workoutHistory';
 import { useCoach } from '../../../contexts/CoachContext';
+import { getExerciseMedia, hasExerciseMedia } from '../../../utils/exerciseMedia';
 
 const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplete, onRegenerate, onCancel, onManualLog }) {
   const [exercises, setExercises] = useState(workout.exercises || []);
@@ -1133,6 +1134,52 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
             <div className="text-lg md:text-2xl text-gray-300">
               Set {currentSetIndex + 1} of {currentExercise.sets.length}
             </div>
+            
+            {/* Exercise Demonstration GIF/Video */}
+            {(() => {
+              const mediaPath = getExerciseMedia(currentExercise.name);
+              return (
+                <div className="mt-4 md:mt-6 mb-4 md:mb-6">
+                  <div className="relative w-full max-w-md mx-auto aspect-video bg-gray-900/50 border-2 border-gray-700 rounded-xl overflow-hidden">
+                    {mediaPath ? (
+                      <img
+                        src={mediaPath}
+                        alt={`${currentExercise.name} demonstration`}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          // If image fails to load, show placeholder
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center"
+                      style={{ display: mediaPath ? 'none' : 'flex' }}
+                    >
+                      <div className="text-center p-6">
+                        <div className="text-4xl md:text-5xl mb-3">🎬</div>
+                        <div className="text-sm md:text-base text-gray-400 font-medium">
+                          Exercise Demo
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          {hasExerciseMedia(currentExercise.name) 
+                            ? 'Loading...' 
+                            : 'Demo coming soon'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {mediaPath && (
+                    <div className="text-center mt-2">
+                      <span className="text-xs text-gray-500">
+                        💡 Watch the form demonstration above
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             
             {/* Previous Performance */}
             {prevPerformance && (

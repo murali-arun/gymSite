@@ -1,0 +1,59 @@
+# Exercise GIF URLs
+# Format: Exercise Name | URL
+# Lines starting with # are ignored
+
+# ==== UPPER BODY ====
+
+# Chest
+Bench Press | https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bench-Press.gif
+Incline Bench Press | https://fitnessprogramer.com/wp-content/uploads/2021/02/Incline-Barbell-Bench-Press.gif
+Dumbbell Bench Press | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Bench-Press.gif
+Push-ups | https://fitnessprogramer.com/wp-content/uploads/2021/02/Push-up.gif
+Dumbbell Fly | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Fly.gif
+Cable Fly | https://fitnessprogramer.com/wp-content/uploads/2021/02/CABLE-FLY.gif
+
+# Back
+Deadlift | https://fitnessprogramer.com/wp-content/uploads/2021/02/Deadlift.gif
+Pull-ups | https://fitnessprogramer.com/wp-content/uploads/2021/04/Pull-up.gif
+Barbell Row | https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Row.gif
+Dumbbell Row | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Bent-Over-Row.gif
+Lat Pulldown | https://fitnessprogramer.com/wp-content/uploads/2021/02/Lat-Pulldown.gif
+Seated Cable Row | https://fitnessprogramer.com/wp-content/uploads/2021/02/Seated-Cable-Row.gif
+Face Pulls | https://fitnessprogramer.com/wp-content/uploads/2021/02/Face-Pull.gif
+
+# Shoulders
+Overhead Press | https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Shoulder-Press.gif
+Dumbbell Shoulder Press | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Shoulder-Press.gif
+Lateral Raise | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lateral-Raise.gif
+Front Raise | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Front-Raise.gif
+Rear Delt Fly | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Reverse-Fly.gif
+
+# Arms
+Barbell Curl | https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Curl.gif
+Dumbbell Curl | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Curl.gif
+Hammer Curl | https://fitnessprogramer.com/wp-content/uploads/2021/02/Hammer-Curl.gif
+Tricep Pushdown | https://fitnessprogramer.com/wp-content/uploads/2021/02/rope-push-down.gif
+Overhead Tricep Extension | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Overhead-Triceps-Extension.gif
+
+# ==== LOWER BODY ====
+
+Squat | https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Squat.gif
+Front Squat | https://fitnessprogramer.com/wp-content/uploads/2021/02/Front-Squat.gif
+Romanian Deadlift | https://fitnessprogramer.com/wp-content/uploads/2021/02/Romanian-Deadlift.gif
+Bulgarian Split Squat | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Bulgarian-Split-Squat.gif
+Leg Press | https://fitnessprogramer.com/wp-content/uploads/2021/02/LEG-PRESS.gif
+Leg Curl | https://fitnessprogramer.com/wp-content/uploads/2021/02/Leg-Curl.gif
+Leg Extension | https://fitnessprogramer.com/wp-content/uploads/2021/02/Leg-Extensions.gif
+Lunges | https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lunge.gif
+Calf Raises | https://fitnessprogramer.com/wp-content/uploads/2021/02/Calf-Raise.gif
+Goblet Squat | https://fitnessprogramer.com/wp-content/uploads/2021/02/goblet-squat.gif
+
+# ==== CORE ====
+
+Plank | https://fitnessprogramer.com/wp-content/uploads/2021/02/Plank.gif
+Russian Twists | https://fitnessprogramer.com/wp-content/uploads/2021/02/Weighted-Russian-Twist.gif
+Leg Raises | https://fitnessprogramer.com/wp-content/uploads/2021/02/Hanging-Straight-Leg-Raise.gif
+Mountain Climbers | https://fitnessprogramer.com/wp-content/uploads/2021/02/Mountain-Climber.gif
+Bicycle Crunches | https://fitnessprogramer.com/wp-content/uploads/2021/02/Bicycle-Crunch.gif
+
+# Add more URLs below this line:
