@@ -16,6 +16,7 @@ const Progress = lazy(() => import('./components/features/progress/Progress'));
 const ProgressDashboard = lazy(() => import('./components/features/progress/ProgressDashboard'));
 const Achievements = lazy(() => import('./components/features/progress/Achievements'));
 const StrengthStandards = lazy(() => import('./components/features/progress/StrengthStandards'));
+const TrainerChat = lazy(() => import('./components/features/coach/TrainerChat'));
 
 // Loading component
 const LoadingFallback = () => (
@@ -30,7 +31,7 @@ const LoadingFallback = () => (
 function AppContent() {
   const [activeUserId, setActiveUserIdState] = useState(null);
   const [user, setUser] = useState(null);
-  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog, templates, strength
+  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog, templates, strength, chat
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const [workoutToManualLog, setWorkoutToManualLog] = useState(null); // For pre-filling manual log
   const [showCoachSelector, setShowCoachSelector] = useState(false);
@@ -347,6 +348,18 @@ function AppContent() {
                 )}
               </div>
 
+              {/* Chat */}
+              <button
+                onClick={() => setView('chat')}
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
+                  view === 'chat'
+                    ? 'bg-gradient-to-r from-accent-purple to-primary-500 text-white shadow-lg shadow-accent-purple/30 scale-105'
+                    : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
+                }`}
+              >
+                💬 Chat
+              </button>
+
               {/* Coach */}
               <button
                 onClick={() => setShowCoachSelector(true)}
@@ -457,6 +470,16 @@ function AppContent() {
                     📉 Details
                   </button>
                 </div>
+
+                {/* Chat */}
+                <button
+                  onClick={() => { setView('chat'); setShowMobileMenu(false); }}
+                  className={`w-full px-4 py-3 rounded-2xl font-medium glass-strong hover:bg-white/15 transition-all duration-300 text-left active:scale-98 ${
+                    view === 'chat' ? 'bg-gradient-to-r from-accent-purple/30 to-primary-600/30 text-white' : 'text-gray-300'
+                  }`}
+                >
+                  💬 Trainer Chat
+                </button>
 
                 {/* Coach */}
                 <button
@@ -629,6 +652,13 @@ function AppContent() {
           {view === 'strength' && (
             <StrengthStandards
               user={user}
+            />
+          )}
+          
+          {view === 'chat' && (
+            <TrainerChat
+              user={user}
+              onRefresh={refreshUserData}
             />
           )}
         </Suspense>
