@@ -25,6 +25,9 @@ const MODEL_CONFIG = {
   
   // Workout feedback - frequent but simple
   feedback: process.env.MODEL_FEEDBACK || 'gpt-4o-mini',
+  
+  // Chat conversations - needs personality and context
+  chat: process.env.MODEL_CHAT || 'gpt-4o-mini',
 };
 
 console.log('=== MODEL CONFIGURATION ===');
@@ -32,6 +35,7 @@ console.log('Workout Generation:', MODEL_CONFIG.workoutGeneration);
 console.log('Validation:', MODEL_CONFIG.validation);
 console.log('Progress Summary:', MODEL_CONFIG.progressSummary);
 console.log('Feedback:', MODEL_CONFIG.feedback);
+console.log('Chat:', MODEL_CONFIG.chat);
 console.log('===========================');
 
 // Middleware - CORS must come first
@@ -305,6 +309,90 @@ app.post('/api/generate-workout', async (req, res) => {
     console.error('=============================');
     res.status(500).json({ 
       error: 'Failed to generate workout',
+      message: error.message 
+    });
+  }
+});
+
+// AI Coach Chat endpoint
+app.post('/api/coach-chat', async (req, res) => {
+  try {
+    const { message, coachPersonality, userContext, conversationHistory = [] } = req.body;
+    
+    console.log('=== COACH CHAT REQUEST ===');
+    console.log('Coach:', coachPersonality?.name);
+    console.log('User message:', message);
+    console.log('History length:', conversationHistory.length);
+    console.log('==========================');
+    
+    // Build system prompt with coach personality and user context
+    const systemPrompt = `You are ${coachPersonality.name}, a fitness coach with the following personality: ${coachPersonality.personality}
+
+Your voice is ${coachPersonality.voice}. Use these catchphrases naturally: ${coachPersonality.catchphrases.join(', ')}
+
+USER CONTEXT:
+- Name: ${userContext.userName}
+- Total Workouts: ${userContext.totalWorkouts}
+- Workouts per week: ${userContext.workoutsPerWeek}
+- Common exercises: ${userContext.commonExercises.join(', ')}
+- Last workout: ${userContext.lastWorkoutDate}
+- Days training: ${userContext.daysSinceStart}
+- Total volume: ${(userContext.totalVolume / 1000).toFixed(1)}K lbs
+${userContext.initialPrompt ? `- Goals: ${userContext.initialPrompt}` : ''}
+
+You have access to their complete workout history. Provide personalized, contextual, and motivating responses that match your coach personality. Reference their actual data when relevant. Be conversational and helpful.`;
+
+    // Build messages array with history
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      // Add conversation history (last 10 messages to stay within context)
+      ...conversationHistory.slice(-10),
+      { role: 'user', content: message }
+    ];
+    
+    // Call LiteLLM with chat model
+    const model = MODEL_CONFIG.chat;
+    
+    const response = await fetch(process.env.LITELLM_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.LITELLM_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages,
+        temperature: 0.8, // More creative/varied responses
+        max_tokens: 500   // Keep responses concise
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('=== CHAT API ERROR ===');
+      console.error('Status:', response.status, response.statusText);
+      console.error('Response:', errorText);
+      console.error('======================');
+      return res.status(response.status).json({ 
+        error: `AI API request failed: ${response.status} ${response.statusText}`,
+        details: errorText
+      });
+    }
+
+    const data = await response.json();
+    const responseText = data.choices[0]?.message?.content || 'Sorry, I couldn\'t process that.';
+    
+    console.log('=== CHAT SUCCESS ===');
+    console.log('Response length:', responseText.length);
+    console.log('====================');
+    
+    res.json({ response: responseText });
+  } catch (error) {
+    console.error('=== CHAT ERROR ===');
+    console.error('Error:', error.message);
+    console.error('==================');
+    res.status(500).json({ 
+      error: 'Failed to get coach response',
       message: error.message 
     });
   }

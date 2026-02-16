@@ -1195,3 +1195,39 @@ IMPORTANT:
     throw error;
   }
 }
+// Get coach chat response
+export async function getCoachChatResponse(message, coachPersonality, userContext, conversationHistory = []) {
+  console.log('=== SENDING CHAT MESSAGE ===');
+  console.log('Coach:', coachPersonality.name);
+  console.log('Message:', message);
+  console.log('============================');
+  
+  try {
+    const response = await fetch(`${BACKEND_API_URL}/coach-chat`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        message,
+        coachPersonality,
+        userContext,
+        conversationHistory
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `Chat API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    console.log('=== CHAT RESPONSE RECEIVED ===');
+    console.log('Response length:', data.response?.length);
+    console.log('===============================');
+    
+    return data.response;
+  } catch (error) {
+    console.error('Error getting coach response:', error);
+    throw error;
+  }
+}
