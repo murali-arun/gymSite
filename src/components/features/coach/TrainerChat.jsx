@@ -130,7 +130,11 @@ export default function TrainerChat({ user, onRefresh }) {
     const context = buildUserContext();
     
     // Contextual response based on message content
-    if (lowerMessage.includes('goal') || lowerMessage.includes('target')) {
+    if (lowerMessage.includes('fat') || lowerMessage.includes('weight loss') || lowerMessage.includes('lose') || 
+        lowerMessage.includes('bodily') || lowerMessage.includes('body composition') || 
+        lowerMessage.includes('cutting') || lowerMessage.includes('shred') || lowerMessage.includes('lean')) {
+      return generateFatLossResponse(userMessage, coach, context);
+    } else if (lowerMessage.includes('goal') || lowerMessage.includes('target')) {
       return generateGoalResponse(userMessage, coach, context);
     } else if (lowerMessage.includes('diet') || lowerMessage.includes('nutrition') || lowerMessage.includes('eat')) {
       return generateNutritionResponse(userMessage, coach, context);
@@ -161,8 +165,10 @@ export default function TrainerChat({ user, onRefresh }) {
     const exerciseCount = {};
     workouts.forEach(workout => {
       workout.exercises?.forEach(ex => {
-        const name = ex.name || ex.exercise;
+        let name = ex.name || ex.exercise;
         if (name) {
+          // Clean up exercise names - remove technical details in parentheses
+          name = name.replace(/\s*\([^)]*\)/g, '').trim();
           exerciseCount[name] = (exerciseCount[name] || 0) + 1;
         }
       });
@@ -221,6 +227,21 @@ export default function TrainerChat({ user, onRefresh }) {
       sage: hasGoals
         ? `${goalText}\n\nBased on your ${context.totalWorkouts} sessions and focus on ${context.commonExercises.join(', ')}, you're on a clear path. Shall we refine the strategy?`
         : `Wise goal setting requires understanding both the destination and the journey. Tell me your aspirations, and I'll help you chart the path.`
+    };
+    return responses[coach.name.toLowerCase().replace('coach ', '')] || responses.iron;
+  };
+
+  const generateFatLossResponse = (msg, coach, context) => {
+    const { totalWorkouts, workoutsPerWeek, commonExercises } = context;
+    const hasCardio = commonExercises.some(ex => 
+      ex.toLowerCase().includes('walk') || ex.toLowerCase().includes('run') || 
+      ex.toLowerCase().includes('bike') || ex.toLowerCase().includes('cardio'));
+    
+    const responses = {
+      iron: `Fat loss is 80% nutrition, 20% training. You're doing ${workoutsPerWeek} workouts/week with ${commonExercises.slice(0, 2).join(' and ')} - that's good! But here's what moves the needle:\n\n1. CALORIE DEFICIT - Track your food, eat 300-500 calories below maintenance\n2. PROTEIN HIGH - 1g per pound bodyweight to preserve muscle\n3. ${hasCardio ? 'Keep that cardio going' : 'Add 2-3 cardio sessions weekly'}\n4. STRENGTH TRAINING - Keep lifting to maintain muscle (you're already doing this!)\n5. BE PATIENT - 1-2lbs per week is sustainable\n\nYou're training hard. Now dial in the diet and you WILL see changes!`,
+      zen: `Body transformation requires patience and mindful awareness. You've completed ${totalWorkouts} sessions - the training is there. Fat loss happens in the kitchen:\n\n• Create a gentle calorie deficit (not extreme)\n• Focus on whole, nourishing foods\n• Eat protein with each meal to preserve your hard-earned muscle\n• Stay hydrated - often we mistake thirst for hunger\n${hasCardio ? '• Continue your cardio practice' : '• Add light cardio - walking, cycling - for heart health'}\n\nProgress takes time. Trust the process and be kind to yourself.`,
+      blaze: `YO! ${totalWorkouts} workouts and training ${commonExercises.slice(0, 2).join(', ')}! NICE! But fat loss? That's a NUTRITION game! Here's the ATTACK PLAN:\n\n💥 CALORIE DEFICIT - Eat less than you burn!\n💥 PROTEIN POWER - 1g per lb bodyweight!\n💥 ${hasCardio ? 'KEEP that cardio CRUSHING!' : 'ADD cardio - 20-30 min, 3x/week!'}\n💥 LIFT HEAVY - Keep that muscle! (You got this!)\n💥 STAY CONSISTENT - 12 weeks minimum!\n\nYou're putting in WORK! Fix the diet and watch the FAT MELT! 🔥💪`,
+      sage: `Fat loss is a matter of energy balance and metabolic optimization. Your training frequency of ${workoutsPerWeek} sessions weekly provides the stimulus. Now address nutrition:\n\n• Caloric deficit: 15-20% below maintenance\n• Protein: 0.8-1g per pound to preserve lean mass\n• Whole foods: Minimize processed items\n• Fiber: 25-35g daily for satiety\n${hasCardio ? '• Maintain cardiovascular work' : '• Add LISS cardio: 150 min/week'}\n• Sleep: 7-9 hours for hormonal balance\n\nFat loss averages 0.5-1% bodyweight weekly when done correctly. Patience yields results.`
     };
     return responses[coach.name.toLowerCase().replace('coach ', '')] || responses.iron;
   };
@@ -322,13 +343,14 @@ export default function TrainerChat({ user, onRefresh }) {
 
   const generateHelpResponse = (msg, coach, context) => {
     const { totalWorkouts, commonExercises } = context;
-    const stats = totalWorkouts > 0 ? ` I know you've done ${totalWorkouts} workouts focusing on ${commonExercises.join(', ')}.` : '';
+    const topExercises = commonExercises.length > 0 ? commonExercises.slice(0, 2).join(' and ') : 'various movements';
+    const stats = totalWorkouts > 0 ? ` I've tracked your ${totalWorkouts} workouts - you're consistent with ${topExercises}.` : '';
     
     const responses = {
-      iron: `I'm here to help you get stronger, period.${stats} Ask me about workouts, exercises, goals, nutrition, recovery - whatever you need to level up. What's your question?`,
-      zen: `I'm here to guide you on your fitness journey with patience and understanding.${stats} Ask about form, programming, mindset, recovery, or anything else. How can I assist you?`,
-      blaze: `BRO I'm here for EVERYTHING!${stats} Workouts! Nutrition! Motivation! Goals! ANYTHING you need to get BETTER! What do you want to know?! 🔥`,
-      sage: `I offer knowledge on training methodology, exercise science, nutrition fundamentals, and sustainable fitness practices.${stats} What wisdom do you seek?`
+      iron: `I'm here to help you get stronger.${stats} Ask me about workouts, exercises, goals, nutrition, fat loss, recovery - whatever you need to level up. What's your question?`,
+      zen: `I'm here to guide you on your fitness journey with patience.${stats} Ask about form, programming, mindset, nutrition, recovery, or anything else. How can I assist you?`,
+      blaze: `BRO I'm here for EVERYTHING!${stats} Workouts! Nutrition! Fat Loss! Motivation! Goals! ANYTHING you need to get BETTER! What do you want to know?! 🔥`,
+      sage: `I offer knowledge on training methodology, exercise science, nutrition, and sustainable fitness practices.${stats} What wisdom do you seek?`
     };
     return responses[coach.name.toLowerCase().replace('coach ', '')] || responses.iron;
   };
