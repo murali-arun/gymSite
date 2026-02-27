@@ -1070,6 +1070,9 @@ export async function checkWorkoutMuscleCoverage(user, targetMusclesDescription,
       coveredMuscles: [],
       missingMuscles: [],
       weakCoverage: [],
+      overuseRisk: 'unknown',
+      overuseReasons: [],
+      recommendedAdjustments: [],
       suggestions: [],
       summary: 'Add your target muscles description first, then run AI coverage check.'
     };
@@ -1080,6 +1083,9 @@ export async function checkWorkoutMuscleCoverage(user, targetMusclesDescription,
       coveredMuscles: [],
       missingMuscles: [],
       weakCoverage: [],
+      overuseRisk: 'unknown',
+      overuseReasons: [],
+      recommendedAdjustments: [],
       suggestions: [],
       summary: 'Select at least one exercise to analyze muscle coverage.'
     };
@@ -1088,11 +1094,12 @@ export async function checkWorkoutMuscleCoverage(user, targetMusclesDescription,
   const messages = [
     {
       role: 'system',
-      content: `You are a practical personal trainer focused ONLY on muscle-coverage analysis.
+      content: `You are a practical personal trainer focused on workout quality analysis.
 
 Task:
 - Compare the user's target-muscle description with their selected exercises.
 - Identify what is covered well, what is missing, and what is under-covered.
+- Identify if the workout appears excessive or unbalanced (too much volume for same regions, too many similar patterns, recovery risk).
 - Suggest simple at-home intermediate exercise additions when needed.
 
 Rules:
@@ -1100,12 +1107,16 @@ Rules:
 - Do NOT rewrite the user's exercise list.
 - Be concise and specific.
 - If targets are broad (e.g., "full body"), infer major regions: chest, back, shoulders, arms, core, glutes, quads, hamstrings, calves.
+- Overuse risk levels must be one of: "low", "moderate", "high".
 
 Return ONLY valid JSON (no markdown):
 {
   "coveredMuscles": ["..."],
   "missingMuscles": ["..."],
   "weakCoverage": ["..."],
+  "overuseRisk": "low|moderate|high",
+  "overuseReasons": ["reason 1", "reason 2"],
+  "recommendedAdjustments": ["adjustment 1", "adjustment 2"],
   "suggestions": ["exercise suggestion 1", "exercise suggestion 2"],
   "summary": "one short paragraph"
 }`
@@ -1132,6 +1143,9 @@ Return ONLY valid JSON (no markdown):
       coveredMuscles: Array.isArray(parsed.coveredMuscles) ? parsed.coveredMuscles : [],
       missingMuscles: Array.isArray(parsed.missingMuscles) ? parsed.missingMuscles : [],
       weakCoverage: Array.isArray(parsed.weakCoverage) ? parsed.weakCoverage : [],
+      overuseRisk: ['low', 'moderate', 'high'].includes(parsed.overuseRisk) ? parsed.overuseRisk : 'low',
+      overuseReasons: Array.isArray(parsed.overuseReasons) ? parsed.overuseReasons : [],
+      recommendedAdjustments: Array.isArray(parsed.recommendedAdjustments) ? parsed.recommendedAdjustments : [],
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
       summary: parsed.summary || 'Coverage check complete.'
     };
@@ -1141,6 +1155,9 @@ Return ONLY valid JSON (no markdown):
       coveredMuscles: [],
       missingMuscles: [],
       weakCoverage: [],
+      overuseRisk: 'unknown',
+      overuseReasons: [],
+      recommendedAdjustments: [],
       suggestions: [],
       summary: 'Could not analyze muscle coverage right now. Please try again.'
     };
