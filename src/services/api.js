@@ -1,5 +1,6 @@
 const BACKEND_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 const API_SECRET = import.meta.env.VITE_API_SECRET || '';
+let coverageAiDisabledUntil = 0;
 
 const getHeaders = () => {
   const headers = {
@@ -1242,6 +1243,15 @@ Return ONLY valid JSON (no markdown):
     }
   ];
 
+  const now = Date.now();
+  if (now < coverageAiDisabledUntil) {
+    const fallback = localCoverageFallback(targetMusclesDescription, normalizedExercises);
+    return {
+      ...fallback,
+      summary: `${fallback.summary} (AI temporarily unavailable, using local analysis.)`
+    };
+  }
+
   try {
     const response = await callLiteLLM(messages, 'feedback');
 
@@ -1265,7 +1275,8 @@ Return ONLY valid JSON (no markdown):
       summary: parsed.summary || 'Coverage check complete.'
     };
   } catch (error) {
-    console.error('Error checking workout muscle coverage:', error);
+    coverageAiDisabledUntil = Date.now() + (5 * 60 * 1000);
+    console.warn('Coverage AI unavailable, switching to local analysis for 5 minutes.');
     const fallback = localCoverageFallback(targetMusclesDescription, normalizedExercises);
     return {
       ...fallback,
