@@ -1063,9 +1063,122 @@ Keep feedback concise (3-5 sentences) but impactful and personalized.`
 }
 
 export async function checkWorkoutMuscleCoverage(user, targetMusclesDescription, selectedExercises) {
+  const localCoverageFallback = (targetText, exercises) => {
+    const muscleKeywords = {
+      neck: ['neck', 'chin tuck', 'neck flexion', 'neck extension', 'isometric neck'],
+      chest: ['chest', 'bench', 'push-up', 'pushup', 'fly', 'press'],
+      back: ['back', 'row', 'pull', 'pulldown', 'lat'],
+      shoulders: ['shoulder', 'delt', 'overhead', 'arnold', 'lateral raise', 'face pull'],
+      biceps: ['bicep', 'curl', 'hammer curl'],
+      triceps: ['tricep', 'dip', 'pushdown', 'skull crusher', 'close-grip'],
+      forearms: ['forearm', 'wrist', 'grip', 'farmer carry'],
+      core: ['core', 'ab', 'plank', 'crunch', 'twist', 'leg raise', 'hollow'],
+      pelvic: ['pelvic', 'hip flexor', 'adductor', 'clamshell'],
+      glutes: ['glute', 'hip thrust', 'bridge', 'frog pump'],
+      quads: ['quad', 'squat', 'lunge', 'step-up', 'split squat'],
+      hamstrings: ['hamstring', 'romanian deadlift', 'rdl', 'leg curl', 'good morning'],
+      calves: ['calf', 'calves', 'jump rope']
+    };
+
+    const normalize = (value) => value.toLowerCase();
+    const target = normalize(targetText || '');
+    const normalizedExercises = exercises.map(normalize);
+
+    let targetMuscles = Object.keys(muscleKeywords).filter(muscle =>
+      muscleKeywords[muscle].some(keyword => target.includes(keyword))
+    );
+
+    if (targetMuscles.length === 0 && target.trim()) {
+      targetMuscles = target
+        .split(/[;,\n]/)
+        .map(item => item.trim())
+        .filter(Boolean)
+        .map(raw => {
+          const entry = Object.entries(muscleKeywords).find(([, keywords]) =>
+            keywords.some(keyword => raw.includes(keyword) || keyword.includes(raw))
+          );
+          return entry ? entry[0] : null;
+        })
+        .filter(Boolean)
+        .filter((value, index, arr) => arr.indexOf(value) === index);
+    }
+
+    if (targetMuscles.length === 0) {
+      targetMuscles = ['chest', 'back', 'shoulders', 'core', 'glutes', 'quads', 'hamstrings'];
+    }
+
+    const coverageCount = Object.fromEntries(Object.keys(muscleKeywords).map(m => [m, 0]));
+
+    normalizedExercises.forEach(exercise => {
+      Object.entries(muscleKeywords).forEach(([muscle, keywords]) => {
+        if (keywords.some(keyword => exercise.includes(keyword))) {
+          coverageCount[muscle] += 1;
+        }
+      });
+    });
+
+    const coveredMuscles = targetMuscles.filter(muscle => coverageCount[muscle] > 0);
+    const weakCoverage = targetMuscles.filter(muscle => coverageCount[muscle] === 1);
+    const missingMuscles = targetMuscles.filter(muscle => coverageCount[muscle] === 0);
+
+    const heavyFocus = Object.entries(coverageCount)
+      .filter(([, count]) => count >= 4)
+      .map(([muscle]) => muscle);
+
+    let overuseRisk = 'low';
+    if (heavyFocus.length >= 2 || normalizedExercises.length >= 14) {
+      overuseRisk = 'high';
+    } else if (heavyFocus.length === 1 || normalizedExercises.length >= 10) {
+      overuseRisk = 'moderate';
+    }
+
+    const overuseReasons = [];
+    if (normalizedExercises.length >= 10) {
+      overuseReasons.push(`High total exercise count (${normalizedExercises.length}) in one session.`);
+    }
+    if (heavyFocus.length > 0) {
+      overuseReasons.push(`Very high concentration on: ${heavyFocus.join(', ')}.`);
+    }
+
+    const recommendedAdjustments = [];
+    if (missingMuscles.length > 0) {
+      recommendedAdjustments.push(`Add 1-2 exercises for: ${missingMuscles.join(', ')}.`);
+    }
+    if (heavyFocus.length > 0) {
+      recommendedAdjustments.push(`Reduce 1-2 exercises from: ${heavyFocus.join(', ')} to balance fatigue.`);
+    }
+    if (normalizedExercises.length >= 10) {
+      recommendedAdjustments.push('Limit main exercises to ~6-8 for a cleaner, recoverable session.');
+    }
+
+    const suggestions = missingMuscles.length > 0
+      ? [`Consider adding movements for: ${missingMuscles.join(', ')}.`]
+      : [];
+
+    const summary = missingMuscles.length > 0
+      ? `Fallback analysis: good start, but you are missing ${missingMuscles.join(', ')}. Overuse risk is ${overuseRisk}.`
+      : `Fallback analysis: muscle targets are covered. Overuse risk is ${overuseRisk}.`;
+
+    return {
+      coveredMuscles,
+      missingMuscles,
+      weakCoverage,
+      overuseRisk,
+      overuseReasons,
+      recommendedAdjustments,
+      suggestions,
+      summary
+    };
+  };
+
   const normalizedExercises = (selectedExercises || [])
     .map(exercise => typeof exercise === 'string' ? exercise.trim() : '')
     .filter(Boolean);
+
+  const compactProfile = (user?.initialPrompt || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 600);
 
   if (!targetMusclesDescription?.trim()) {
     return {
@@ -1125,7 +1238,7 @@ Return ONLY valid JSON (no markdown):
     },
     {
       role: 'user',
-      content: `Client profile: ${user?.initialPrompt || 'Not provided'}\n\nTarget muscles:\n${targetMusclesDescription}\n\nSelected exercises:\n${JSON.stringify(normalizedExercises, null, 2)}`
+      content: `Client profile (compact): ${compactProfile || 'Not provided'}\n\nTarget muscles:\n${targetMusclesDescription}\n\nSelected exercises:\n${JSON.stringify(normalizedExercises, null, 2)}`
     }
   ];
 
@@ -1153,15 +1266,10 @@ Return ONLY valid JSON (no markdown):
     };
   } catch (error) {
     console.error('Error checking workout muscle coverage:', error);
+    const fallback = localCoverageFallback(targetMusclesDescription, normalizedExercises);
     return {
-      coveredMuscles: [],
-      missingMuscles: [],
-      weakCoverage: [],
-      overuseRisk: 'unknown',
-      overuseReasons: [],
-      recommendedAdjustments: [],
-      suggestions: [],
-      summary: 'Could not analyze muscle coverage right now. Please try again.'
+      ...fallback,
+      summary: `${fallback.summary} (AI unavailable, showing local analysis.)`
     };
   }
 }
