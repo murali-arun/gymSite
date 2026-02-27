@@ -259,6 +259,12 @@ app.post('/api/generate-workout', async (req, res) => {
       case 'feedback':
         model = MODEL_CONFIG.feedback;
         break;
+      case 'coverage-check':
+        model = MODEL_CONFIG.feedback;
+        break;
+      case 'template-generation':
+        model = MODEL_CONFIG.feedback;
+        break;
       case 'workout':
       default:
         model = MODEL_CONFIG.workoutGeneration;
