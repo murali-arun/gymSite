@@ -25,7 +25,9 @@ async function callLiteLLM(messages, taskType = 'workout') {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(errorData.error || `API request failed: ${response.status} ${response.statusText}`);
+    const detailText = errorData.details || errorData.message || '';
+    const baseMessage = errorData.error || `API request failed: ${response.status} ${response.statusText}`;
+    throw new Error(detailText ? `${baseMessage} - ${detailText}` : baseMessage);
   }
 
   const data = await response.json();
@@ -1128,7 +1130,7 @@ Return ONLY valid JSON (no markdown):
   ];
 
   try {
-    const response = await callLiteLLM(messages, 'coverage-check');
+    const response = await callLiteLLM(messages, 'feedback');
 
     let cleanResponse = response.trim();
     if (cleanResponse.startsWith('```json')) {
