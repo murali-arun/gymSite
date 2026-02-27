@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { checkWorkoutMuscleCoverage } from '../../../services/api';
 import { useCoach } from '../../../contexts/CoachContext';
+import HumanBody3DMap from './HumanBody3DMap';
 
 const EXERCISE_LIBRARY = {
   Neck: [
@@ -432,29 +433,28 @@ export default function CustomWorkoutBuilder({ user, onStartWorkout }) {
 
               <div className="lg:col-span-1">
                 <div className="bg-gray-700/40 border border-gray-600 rounded-xl p-4 lg:sticky lg:top-24">
-                  <h3 className="text-white font-semibold mb-3">Body Part Impact</h3>
-                  <p className="text-xs text-gray-400 mb-3">Green = currently targeted by selected exercises. Red = not yet targeted.</p>
-                  <div className="space-y-2">
-                    {Object.entries(bodyPartImpact).map(([bodyPart, selectedCount]) => {
-                      const isActive = selectedCount > 0;
-                      return (
-                        <div
-                          key={bodyPart}
-                          className={`rounded-lg border px-3 py-2 flex items-center justify-between ${
-                            isActive
-                              ? 'bg-green-900/20 border-green-700/40'
-                              : 'bg-red-900/20 border-red-700/40'
-                          }`}
-                        >
-                          <span className={`text-sm font-medium ${isActive ? 'text-green-300' : 'text-red-300'}`}>
-                            {bodyPart}
-                          </span>
-                          <span className={`text-xs ${isActive ? 'text-green-200' : 'text-red-200'}`}>
-                            {isActive ? `${selectedCount} selected` : 'Not targeted'}
-                          </span>
-                        </div>
-                      );
-                    })}
+                  <h3 className="text-white font-semibold mb-3">3D Body Impact</h3>
+                  <p className="text-xs text-gray-400 mb-3">Rotate model with mouse. Green = targeted, Red = not targeted.</p>
+                  <HumanBody3DMap bodyPartImpact={bodyPartImpact} />
+                  <div className="mt-3 flex items-center gap-4 text-xs text-gray-300">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-3 w-3 rounded-full bg-green-500"></span>
+                      Targeted
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-3 w-3 rounded-full bg-red-500"></span>
+                      Not targeted
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-1 max-h-36 overflow-auto pr-1">
+                    {Object.entries(bodyPartImpact).map(([bodyPart, selectedCount]) => (
+                      <div key={bodyPart} className="text-xs text-gray-300 flex items-center justify-between">
+                        <span>{bodyPart}</span>
+                        <span className={selectedCount > 0 ? 'text-green-300' : 'text-red-300'}>
+                          {selectedCount > 0 ? `${selectedCount} selected` : 'none'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
