@@ -20,7 +20,9 @@ def to_kebab_case(text):
     return text.lower().replace(' ', '-').replace('_', '-')
 
 def format_size(size_bytes):
-    return f"{size_bytes / (1024 * 1024):.2f} MB"
+    return f"{
+        
+        size_bytes / (1024 * 1024):.2f} MB"
 
 def download_file(url, filepath):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}

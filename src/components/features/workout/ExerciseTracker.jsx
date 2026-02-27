@@ -1566,9 +1566,9 @@ const ExerciseTracker = memo(function ExerciseTracker({ user, workout, onComplet
             <button
               onClick={onRegenerate}
               className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-4 px-6 rounded-lg transition-all"
-              title="Generate a new workout"
+              title="Go back to workout builder"
             >
-              🔄 Regenerate
+              🔄 New Selection
             </button>
           )}
           <button

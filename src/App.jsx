@@ -7,7 +7,7 @@ import { AnimatePresence } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load heavy components for better initial load performance
-const WorkoutGenerator = lazy(() => import('./components/features/workout/WorkoutGenerator'));
+const CustomWorkoutBuilder = lazy(() => import('./components/features/workout/CustomWorkoutBuilder'));
 const ExerciseTracker = lazy(() => import('./components/features/workout/ExerciseTracker'));
 const History = lazy(() => import('./components/features/workout/History'));
 const ManualWorkoutLog = lazy(() => import('./components/features/workout/ManualWorkoutLog'));
@@ -31,7 +31,7 @@ const LoadingFallback = () => (
 function AppContent() {
   const [activeUserId, setActiveUserIdState] = useState(null);
   const [user, setUser] = useState(null);
-  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog, templates, strength, chat
+  const [view, setView] = useState('home'); // home, tracker, history, progress, achievements, dashboard, manualLog, customWorkout, templates, strength, chat
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const [workoutToManualLog, setWorkoutToManualLog] = useState(null); // For pre-filling manual log
   const [showCoachSelector, setShowCoachSelector] = useState(false);
@@ -91,7 +91,7 @@ function AppContent() {
     setView('home');
   }, []);
 
-  const handleWorkoutGenerated = useCallback((workout) => {
+  const handleStartWorkout = useCallback((workout) => {
     setCurrentWorkout(workout);
     setView('tracker');
   }, []);
@@ -259,7 +259,7 @@ function AppContent() {
                     setProgressDropdownOpen(false);
                   }}
                   className={`px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-1 ${
-                    ['templates', 'strength', 'history'].includes(view)
+                    ['customWorkout', 'templates', 'strength', 'history'].includes(view)
                       ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-600/30 scale-105'
                       : 'glass-strong hover:bg-white/15 text-gray-300 hover:scale-105 active:scale-95'
                   }`}
@@ -271,6 +271,14 @@ function AppContent() {
                 </button>
                 {workoutDropdownOpen && (
                   <div onClick={(e) => e.stopPropagation()} className="absolute top-full mt-2 right-0 w-48 glass-strong rounded-2xl overflow-hidden shadow-xl border border-white/10 z-50">
+                    <button
+                      onClick={() => { setView('customWorkout'); setWorkoutDropdownOpen(false); }}
+                      className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${
+                        view === 'customWorkout' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                      }`}
+                    >
+                      🧩 Create Workout
+                    </button>
                     <button
                       onClick={() => { setView('templates'); setWorkoutDropdownOpen(false); }}
                       className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${
@@ -415,6 +423,14 @@ function AppContent() {
                     💪 Workout
                   </div>
                   <button
+                    onClick={() => { setView('customWorkout'); setShowMobileMenu(false); }}
+                    className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
+                      view === 'customWorkout' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
+                    }`}
+                  >
+                    🧩 Create Workout
+                  </button>
+                  <button
                     onClick={() => { setView('templates'); setShowMobileMenu(false); }}
                     className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
                       view === 'templates' ? 'bg-primary-600/30 text-white' : 'text-gray-300'
@@ -555,9 +571,9 @@ function AppContent() {
                 </div>
               )}
 
-              <WorkoutGenerator
+              <CustomWorkoutBuilder
                 user={user}
-                onWorkoutGenerated={handleWorkoutGenerated}
+                onStartWorkout={handleStartWorkout}
               />
               
               {/* Manual Workout Log Button */}
@@ -645,7 +661,14 @@ function AppContent() {
             <WorkoutTemplates
               user={user}
               currentWorkout={currentWorkout}
-              onStartWorkout={handleWorkoutGenerated}
+              onStartWorkout={handleStartWorkout}
+            />
+          )}
+
+          {view === 'customWorkout' && (
+            <CustomWorkoutBuilder
+              user={user}
+              onStartWorkout={handleStartWorkout}
             />
           )}
           

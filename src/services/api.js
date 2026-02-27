@@ -1060,6 +1060,93 @@ Keep feedback concise (3-5 sentences) but impactful and personalized.`
   }
 }
 
+export async function checkWorkoutMuscleCoverage(user, targetMusclesDescription, selectedExercises) {
+  const normalizedExercises = (selectedExercises || [])
+    .map(exercise => typeof exercise === 'string' ? exercise.trim() : '')
+    .filter(Boolean);
+
+  if (!targetMusclesDescription?.trim()) {
+    return {
+      coveredMuscles: [],
+      missingMuscles: [],
+      weakCoverage: [],
+      suggestions: [],
+      summary: 'Add your target muscles description first, then run AI coverage check.'
+    };
+  }
+
+  if (normalizedExercises.length === 0) {
+    return {
+      coveredMuscles: [],
+      missingMuscles: [],
+      weakCoverage: [],
+      suggestions: [],
+      summary: 'Select at least one exercise to analyze muscle coverage.'
+    };
+  }
+
+  const messages = [
+    {
+      role: 'system',
+      content: `You are a practical personal trainer focused ONLY on muscle-coverage analysis.
+
+Task:
+- Compare the user's target-muscle description with their selected exercises.
+- Identify what is covered well, what is missing, and what is under-covered.
+- Suggest simple at-home intermediate exercise additions when needed.
+
+Rules:
+- Do NOT generate a full workout plan.
+- Do NOT rewrite the user's exercise list.
+- Be concise and specific.
+- If targets are broad (e.g., "full body"), infer major regions: chest, back, shoulders, arms, core, glutes, quads, hamstrings, calves.
+
+Return ONLY valid JSON (no markdown):
+{
+  "coveredMuscles": ["..."],
+  "missingMuscles": ["..."],
+  "weakCoverage": ["..."],
+  "suggestions": ["exercise suggestion 1", "exercise suggestion 2"],
+  "summary": "one short paragraph"
+}`
+    },
+    {
+      role: 'user',
+      content: `Client profile: ${user?.initialPrompt || 'Not provided'}\n\nTarget muscles:\n${targetMusclesDescription}\n\nSelected exercises:\n${JSON.stringify(normalizedExercises, null, 2)}`
+    }
+  ];
+
+  try {
+    const response = await callLiteLLM(messages, 'coverage-check');
+
+    let cleanResponse = response.trim();
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    } else if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.replace(/```\n?/g, '');
+    }
+
+    const parsed = JSON.parse(cleanResponse);
+
+    return {
+      coveredMuscles: Array.isArray(parsed.coveredMuscles) ? parsed.coveredMuscles : [],
+      missingMuscles: Array.isArray(parsed.missingMuscles) ? parsed.missingMuscles : [],
+      weakCoverage: Array.isArray(parsed.weakCoverage) ? parsed.weakCoverage : [],
+      suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
+      summary: parsed.summary || 'Coverage check complete.'
+    };
+  } catch (error) {
+    console.error('Error checking workout muscle coverage:', error);
+    return {
+      coveredMuscles: [],
+      missingMuscles: [],
+      weakCoverage: [],
+      suggestions: [],
+      summary: 'Could not analyze muscle coverage right now. Please try again.'
+    };
+  }
+}
+
 export async function generateWorkoutPlan(user, daysCount = 3, coachPersonality = 'iron') {
   console.log(`=== GENERATING ${daysCount}-DAY WORKOUT PLAN ===`);
   
