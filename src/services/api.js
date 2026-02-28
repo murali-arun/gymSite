@@ -2,6 +2,78 @@ const BACKEND_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/a
 const API_SECRET = import.meta.env.VITE_API_SECRET || '';
 let coverageAiDisabledUntil = 0;
 
+const EVIDENCE_BASED_TOP_EXERCISES = `
+EVIDENCE-BASED TOP 5 EXERCISES BY FOCUS AREA (BODYWEIGHT OR DUMBBELL ONLY):
+
+IMPORTANT EQUIPMENT RULE:
+- Only use bodyweight or dumbbell exercises from this list by default
+- Do NOT use barbells, machines, cables, kettlebells, sleds, or specialty equipment unless user explicitly asks
+
+CHEST (top 5):
+- Dumbbell Floor Press
+- Incline Dumbbell Press
+- Push-Up
+- Deficit Push-Up
+- Dumbbell Squeeze Press
+
+BACK / LATS (top 5):
+- One-Arm Dumbbell Row
+- Chest-Supported Dumbbell Row
+- Pull-Up (bodyweight)
+- Inverted Row (bodyweight)
+- Dumbbell Pullover
+
+SHOULDERS (top 5):
+- Dumbbell Shoulder Press
+- Arnold Press
+- Dumbbell Lateral Raise
+- Rear Delt Dumbbell Fly
+- Pike Push-Up
+
+QUADS (top 5):
+- Goblet Squat
+- Bulgarian Split Squat (Dumbbell)
+- Dumbbell Step-Up
+- Dumbbell Front-Foot-Elevated Split Squat
+- Bodyweight Sissy Squat
+
+POSTERIOR CHAIN / GLUTES-HAMSTRINGS (top 5):
+- Dumbbell Romanian Deadlift
+- Dumbbell Hip Thrust
+- Dumbbell Walking Lunge
+- Single-Leg Romanian Deadlift (Dumbbell)
+- Bodyweight Hip Hinge Good Morning
+
+BICEPS (top 5):
+- Incline Dumbbell Curl
+- Alternating Dumbbell Curl
+- Hammer Curl
+- Concentration Curl
+- Zottman Curl
+
+TRICEPS (top 5):
+- Overhead Dumbbell Triceps Extension
+- Dumbbell Skull Crusher
+- Close-Grip Push-Up
+- Bench Dip (bodyweight)
+- Dumbbell Tate Press
+
+CORE (top 5):
+- Dead Bug
+- Side Plank
+- Hollow Body Hold
+- Hanging Knee Raise (bodyweight)
+- Dumbbell Suitcase Carry
+
+FULL BODY / ATHLETIC (top 5):
+- Dumbbell Thruster
+- Dumbbell Clean to Press
+- Dumbbell Renegade Row
+- Burpee
+- Dumbbell Farmer's Carry
+
+Use these as default first-line options for "most effective" programming. Still match load, volume, and exercise choice to user goal, experience, recovery, and available equipment.`;
+
 const getHeaders = () => {
   const headers = {
     'Content-Type': 'application/json'
@@ -403,6 +475,8 @@ IMPORTANT: The client can request different types of workouts:
 - CARDIO: Running, walking, cycling, swimming, rowing, etc.
 - STRETCHING: Flexibility, mobility work, yoga, foam rolling
 - MIXED: Combination workouts (e.g., circuit training, CrossFit-style)
+
+${EVIDENCE_BASED_TOP_EXERCISES}
 
 CRITICAL: Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
 
@@ -1308,6 +1382,8 @@ MULTI-DAY PLANNING PRINCIPLES:
 - Typical weekly split: Upper body, Lower body, Cardio, Full body, Active recovery
 - Progress intensity across days (hard, moderate, easy pattern)
 - Similar exercises can repeat but with different rep schemes
+
+${EVIDENCE_BASED_TOP_EXERCISES}
 
 RESPONSE FORMAT - Return ONLY valid JSON (no markdown):
 {
